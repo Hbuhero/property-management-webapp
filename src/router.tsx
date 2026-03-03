@@ -46,17 +46,29 @@ const router = createBrowserRouter([
 
             // ── Admin dashboard ─────────────────────────────────────────────────
             {
-                path: '/admin/*',
+                path: '/admin',
                 lazy: async () => {
-                    const { DashboardLayout } = await import('./layouts/DashboardLayout')
-                    return { Component: DashboardLayout }
+                    const { default: AdminLayout } = await import('./layouts/AdminLayout')
+                    return { Component: AdminLayout }
                 },
                 errorElement: <GeneralError />,
                 children: [
                     {
                         index: true,
                         lazy: async () => ({
-                            Component: (await import('./pages/AdminDashboard')).default,
+                            Component: (await import('./pages/admin/SystemHealth')).default,
+                        }),
+                    },
+                    {
+                        path: 'users',
+                        lazy: async () => ({
+                            Component: (await import('./pages/admin/UserCentral')).default,
+                        }),
+                    },
+                    {
+                        path: 'security',
+                        lazy: async () => ({
+                            Component: (await import('./pages/admin/SecurityLogs')).default,
                         }),
                     },
                 ],
@@ -64,17 +76,35 @@ const router = createBrowserRouter([
 
             // ── Tenant dashboard ────────────────────────────────────────────────
             {
-                path: '/tenant/*',
+                path: '/tenant',
                 lazy: async () => {
-                    const { DashboardLayout } = await import('./layouts/DashboardLayout')
-                    return { Component: DashboardLayout }
+                    const { default: TenantLayout } = await import('./layouts/TenantLayout')
+                    return { Component: TenantLayout }
                 },
                 errorElement: <GeneralError />,
                 children: [
                     {
                         index: true,
                         lazy: async () => ({
-                            Component: (await import('./pages/TenantDashboard')).default,
+                            Component: (await import('./pages/tenant/TenantOverview')).default,
+                        }),
+                    },
+                    {
+                        path: 'lease',
+                        lazy: async () => ({
+                            Component: (await import('./pages/tenant/LeaseManagement')).default,
+                        }),
+                    },
+                    {
+                        path: 'payments',
+                        lazy: async () => ({
+                            Component: (await import('./pages/tenant/PaymentHub')).default,
+                        }),
+                    },
+                    {
+                        path: 'maintenance',
+                        lazy: async () => ({
+                            Component: (await import('./pages/tenant/MaintenancePortal')).default,
                         }),
                     },
                 ],
@@ -82,33 +112,69 @@ const router = createBrowserRouter([
 
             // ── Owner / Landlord dashboard ──────────────────────────────────────
             {
-                path: '/owner/*',
+                path: '/owner',
                 lazy: async () => {
-                    const { DashboardLayout } = await import('./layouts/DashboardLayout')
-                    return { Component: DashboardLayout }
+                    const { default: OwnerLayout } = await import('./layouts/OwnerLayout')
+                    return { Component: OwnerLayout }
                 },
                 errorElement: <GeneralError />,
                 children: [
                     {
                         index: true,
                         lazy: async () => ({
-                            Component: (await import('./pages/OwnerDashboard')).default,
+                            Component: (await import('./pages/owner/OwnerOverview')).default,
+                        }),
+                    },
+                    {
+                        path: 'properties',
+                        lazy: async () => ({
+                            Component: (await import('./pages/owner/PropertyInventory')).default,
+                        }),
+                    },
+                    {
+                        path: 'applications',
+                        lazy: async () => ({
+                            Component: (await import('./pages/owner/ApplicationInbox')).default,
+                        }),
+                    },
+                    {
+                        path: 'finances',
+                        lazy: async () => ({
+                            Component: (await import('./pages/owner/FinancialReports')).default,
                         }),
                     },
                 ],
             },
             {
-                path: '/landlord/*',
+                path: '/landlord',
                 lazy: async () => {
-                    const { DashboardLayout } = await import('./layouts/DashboardLayout')
-                    return { Component: DashboardLayout }
+                    const { default: OwnerLayout } = await import('./layouts/OwnerLayout')
+                    return { Component: OwnerLayout }
                 },
                 errorElement: <GeneralError />,
                 children: [
                     {
                         index: true,
                         lazy: async () => ({
-                            Component: (await import('./pages/OwnerDashboard')).default,
+                            Component: (await import('./pages/owner/OwnerOverview')).default,
+                        }),
+                    },
+                    {
+                        path: 'properties',
+                        lazy: async () => ({
+                            Component: (await import('./pages/owner/PropertyInventory')).default,
+                        }),
+                    },
+                    {
+                        path: 'applications',
+                        lazy: async () => ({
+                            Component: (await import('./pages/owner/ApplicationInbox')).default,
+                        }),
+                    },
+                    {
+                        path: 'finances',
+                        lazy: async () => ({
+                            Component: (await import('./pages/owner/FinancialReports')).default,
                         }),
                     },
                 ],

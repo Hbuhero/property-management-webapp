@@ -59,7 +59,7 @@ export default function LoginPage() {
                                 <Building2 className="h-12 w-12 text-white" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-white">MakaziHub</h2>
+                                <h2 className="text-2xl font-bold text-white">PMS</h2>
                                 <p className="text-white/80 mt-2 text-sm">Property Management Platform</p>
                             </div>
                             {/* Demo credentials hint */}

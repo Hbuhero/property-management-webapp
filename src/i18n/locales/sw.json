@@ -1,6 +1,6 @@
 {
     "common": {
-        "appName": "MakaziHub",
+        "appName": "PMS",
         "login": "Ingia",
         "logout": "Toka",
         "loading": "Inapakia...",
@@ -17,7 +17,7 @@
     },
     "auth": {
         "loginTitle": "Karibu Tena",
-        "loginSubtitle": "Ingia kwenye akaunti yako ya MakaziHub",
+        "loginSubtitle": "Ingia kwenye akaunti yako ya PMS",
         "loginSuccess": "Umeingia mfumo!",
         "loginError": "Barua pepe au nenosiri si sahihi.",
         "logoutSuccess": "Umetoka mfumoni.",

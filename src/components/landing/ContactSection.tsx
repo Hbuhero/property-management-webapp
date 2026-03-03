@@ -56,7 +56,7 @@ const ContactSection = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-slate-900 dark:text-white">Office Location</h4>
-                                    <p className="text-slate-500 dark:text-slate-400 mt-1">Ground Floor, Info-tech Building, Mwai Kibaki Road, Kawe.<br />Dar Es Salaam, Tanzania</p>
+                                    <p className="text-slate-500 dark:text-slate-400 mt-1">Ground Floor, UDSM.<br />Dar Es Salaam, Tanzania</p>
                                 </div>
                             </div>
 
@@ -66,7 +66,7 @@ const ContactSection = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-slate-900 dark:text-white">Phone</h4>
-                                    <p className="text-slate-500 dark:text-slate-400 mt-1">+255 742 414 569</p>
+                                    <p className="text-slate-500 dark:text-slate-400 mt-1">+255 678 900 269</p>
                                 </div>
                             </div>
 
@@ -76,7 +76,7 @@ const ContactSection = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-slate-900 dark:text-white">Email</h4>
-                                    <p className="text-slate-500 dark:text-slate-400 mt-1">info@belcol-partners.com</p>
+                                    <p className="text-slate-500 dark:text-slate-400 mt-1">info@pms.com</p>
                                 </div>
                             </div>
 

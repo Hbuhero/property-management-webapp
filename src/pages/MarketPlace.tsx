@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { Search, MapPin, Filter, Bed, Bath, Maximize, SlidersHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import SiteFooter from '@/components/landing/SiteFooter';
+import dodomaImg from '@/assets/ditte-yven-vzvpjB5Arlk-unsplash.jpg';
+import darImg from '@/assets/moses-londo-1bubgYf5zeY-unsplash.jpg';
+import arushaImg from '@/assets/sergey-pesterev-DWXR-nAbxCk-unsplash.jpg';
 
 const Skeleton = ({ className = '' }) => (
   <div className={`animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800 ${className}`} />
@@ -48,6 +52,33 @@ const properties = [
     price: '2,100,000', beds: 0, baths: 2, size: '220 sqm', status: 'Available',
     image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=800',
   },
+];
+
+const trendingRegions = [
+  {
+    name: 'Dar es Salaam',
+    properties: '124 Properties',
+    image: darImg,
+    colSpan: 'md:col-span-2 md:row-span-2'
+  },
+  {
+    name: 'Zanzibar',
+    properties: '56 Properties',
+    image: 'https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?auto=format&fit=crop&q=80&w=800', // Zanzibar beach / stone town
+    colSpan: 'md:col-span-1 md:row-span-1'
+  },
+  {
+    name: 'Arusha',
+    properties: '42 Properties',
+    image: arushaImg,
+    colSpan: 'md:col-span-1 md:row-span-1'
+  },
+  {
+    name: 'Dodoma',
+    properties: '28 Properties',
+    image: dodomaImg,
+    colSpan: 'md:col-span-2 md:row-span-1'
+  }
 ];
 
 const Marketplace = () => {
@@ -133,6 +164,63 @@ const Marketplace = () => {
         </div>
       </section>
 
+      {/* ── Trending Regions ────────────────────────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-16">
+        <div className="flex flex-col mb-10">
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Trending Regions</h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
+            Explore the most sought-after locations for property investments
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-4 h-auto md:h-[600px]">
+          {trendingRegions.map((region, idx) => (
+            <motion.div
+              key={region.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.1, duration: 0.5 }}
+              whileHover="hover"
+              className={`relative rounded-3xl overflow-hidden cursor-pointer group ${region.colSpan}`}
+            >
+              <motion.img
+                src={region.image}
+                alt={region.name}
+                className="w-full h-full object-cover"
+                variants={{
+                  hover: { scale: 1.05 }
+                }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/20 to-transparent transition-opacity duration-300 pointer-events-none" />
+
+              <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full">
+                <motion.div
+                  variants={{
+                    hover: { y: -5 }
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight">
+                    {region.name}
+                  </h3>
+                  <div className="flex items-center gap-2 text-emerald-400 font-medium text-sm">
+                    <MapPin className="h-4 w-4" />
+                    {region.properties}
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Decorative top-right badge */}
+              <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-1.5 text-xs font-semibold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
+                Explore →
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
       {/* ── Listings ────────────────────────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-10 gap-4">
@@ -148,7 +236,7 @@ const Marketplace = () => {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="rounded-2xl overflow-hidden">
                 <Skeleton className="h-48 rounded-2xl rounded-b-none" />
@@ -161,7 +249,7 @@ const Marketplace = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((property, idx) => (
               <motion.div
                 key={property.id}
@@ -216,6 +304,8 @@ const Marketplace = () => {
           </div>
         )}
       </section>
+
+      <SiteFooter />
     </div>
   );
 };

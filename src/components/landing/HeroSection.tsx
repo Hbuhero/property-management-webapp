@@ -9,9 +9,11 @@ const HeroSection = () => {
                     className="w-full h-full object-cover brightness-50"
                     alt="Hero background"
                 />
+                {/* gradient overlay for smooth transition */}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/40" />
             </div>
 
-            <div className="relative z-10 max-w-5xl mx-auto px-4 text-center">
+            <div className="relative z-10 max-w-5xl mx-auto px-4 text-center mt-12">
                 <motion.h1
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}

@@ -29,7 +29,7 @@ const PropertyDetail = () => {
     <div className="pt-24 pb-20 bg-slate-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4">
         {/* Breadcrumbs / Back */}
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="flex items-center text-slate-500 hover:text-emerald-600 mb-6 transition-colors font-medium"
         >
@@ -54,15 +54,15 @@ const PropertyDetail = () => {
                   />
                 </AnimatePresence>
               </div>
-              
+
               <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
+                <button
                   onClick={() => setActiveImage(prev => (prev === 0 ? property.images.length - 1 : prev - 1))}
                   className="bg-white/90 p-2 rounded-full shadow-lg hover:bg-white"
                 >
                   <ChevronLeft />
                 </button>
-                <button 
+                <button
                   onClick={() => setActiveImage(prev => (prev === property.images.length - 1 ? 0 : prev + 1))}
                   className="bg-white/90 p-2 rounded-full shadow-lg hover:bg-white"
                 >
@@ -75,9 +75,8 @@ const PropertyDetail = () => {
                   <button
                     key={idx}
                     onClick={() => setActiveImage(idx)}
-                    className={`w-2.5 h-2.5 rounded-full transition-all ${
-                      activeImage === idx ? 'bg-white w-8' : 'bg-white/50'
-                    }`}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${activeImage === idx ? 'bg-white w-8' : 'bg-white/50'
+                      }`}
                   />
                 ))}
               </div>
@@ -182,7 +181,7 @@ const PropertyDetail = () => {
 
               <div className="mt-6 flex items-center text-xs text-slate-400 justify-center">
                 <ShieldCheck size={14} className="mr-1" />
-                Verified by MakaziHub
+                Verified by PMS
               </div>
             </div>
           </div>

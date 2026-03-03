@@ -13,33 +13,33 @@ const OverviewSection = () => {
                         transition={{ duration: 0.6 }}
                     >
                         <h4 className="text-emerald-600 dark:text-emerald-400 font-semibold tracking-wider uppercase text-sm mb-4">
-                            Company Overview
+                            System Overview
                         </h4>
                         <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 leading-tight">
-                            BELCOL Partners
+                            Property Management System
                         </h2>
                         <p className="text-lg text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
-                            BELCOL Partners delivers professional, system-driven property management services focused on maximizing owner returns while eliminating the complexities and stress of property ownership.
+                            Our Property Management System (PMS) is a modern, centralized platform dedicated to eliminating the complexities and stress of property ownership and tenancy in Tanzania. Our goal is to digitize every aspect of property management, from seamless tenant onboarding to transparent financial reporting.
                         </p>
                         <p className="text-lg text-slate-600 dark:text-slate-300 mb-8 leading-relaxed">
-                            With more than 65 units under management, BELCOL Partners has a proven track record of delivering predictable cash flow, efficient operations, and sustainable growth for property owners. We provide transparent reporting, real-time updates, and strategic guidance to help improve profitability and tenant satisfaction.
+                            By automating rent collection, tracking maintenance requests, and maintaining a secure cloud database for all stakeholders, the PMS aims to deliver efficient operations, predictable cash flow, and improved satisfaction for both property owners and tenants alike.
                         </p>
 
                         <div className="grid grid-cols-2 gap-8 pt-4 border-t border-slate-100 dark:border-slate-800">
                             <div>
-                                <p className="text-4xl font-extrabold text-slate-900 dark:text-white text-emerald-600 dark:text-emerald-400 mb-1">
-                                    65+
+                                <p className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+                                    <span className="text-emerald-600 dark:text-emerald-400">100%</span> Digital
                                 </p>
-                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                    Units Managed
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 tracking-wide mt-1">
+                                    Paperless onboarding & automated tracking
                                 </p>
                             </div>
                             <div>
-                                <p className="text-4xl font-extrabold text-slate-900 dark:text-white text-emerald-600 dark:text-emerald-400 mb-1">
-                                    95%
+                                <p className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+                                    <span className="text-emerald-600 dark:text-emerald-400">24/7</span> Access
                                 </p>
-                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                    Rent Collected <br />Within 7 Days
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 tracking-wide mt-1">
+                                    Centralized database for all stakeholders
                                 </p>
                             </div>
                         </div>

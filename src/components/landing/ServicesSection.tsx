@@ -1,36 +1,36 @@
-import { CreditCard, Users, Zap, Wrench, FileText, Scale } from 'lucide-react';
+import { Users, Database, Wallet, Wrench, Bell, BarChart3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const services = [
     {
-        icon: <CreditCard className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />,
-        title: 'Rent Collection & Arrears Tracking',
-        description: 'Secure and timely rent collection with system-driven automation, reminders, and proactive follow-ups to minimize arrears and late payments.',
-    },
-    {
         icon: <Users className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />,
-        title: 'Tenant Management',
-        description: 'Professional handling of tenant relations including communications, lease agreements, renewals, extensions, and dispute resolution.',
+        title: 'Digital Onboarding',
+        description: 'Digitize tenant onboarding and lease management processes for a paperless and seamless entry experience.',
     },
     {
-        icon: <Zap className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />,
-        title: 'Utilities & Service Management',
-        description: 'Monitoring electricity, water, and generator fuel consumption while supervising cleaning, security, and maintenance teams.',
+        icon: <Database className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />,
+        title: 'Centralized Database',
+        description: 'Maintain a single, secure repository for all tenants, properties, landlords, and caretakers to eliminate data loss and fragmentation.',
+    },
+    {
+        icon: <Wallet className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />,
+        title: 'Financial Automation',
+        description: 'Automate rent collection, track expenses, and generate real-time financial reporting securely.',
     },
     {
         icon: <Wrench className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />,
-        title: 'Maintenance Coordination',
-        description: 'Proactive approach to property maintenance with vetted service providers, documented repairs, and comprehensive reporting.',
+        title: 'Maintenance Tracking',
+        description: 'Implement a structured maintenance request and tracking system allowing seamless communication between tenants and property managers.',
     },
     {
-        icon: <FileText className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />,
-        title: 'Financial Reporting',
-        description: 'Comprehensive monthly financial statements detailing income, expenses, arrears, and utility charges for full visibility.',
+        icon: <Bell className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />,
+        title: 'Automated Alerts',
+        description: 'Enable automated alerts and SMS reminders for rent dues, lease expirations, and maintenance updates to keep everyone informed.',
     },
     {
-        icon: <Scale className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />,
-        title: 'Legal & Compliance',
-        description: 'Ensuring all activities comply with Tanzanian laws and commercial property regulations with proper documentation.',
+        icon: <BarChart3 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />,
+        title: 'Analytics & Insights',
+        description: 'Provide property owners with transparent reporting and strategic insights to help improve profitability and tenant satisfaction.',
     }
 ];
 

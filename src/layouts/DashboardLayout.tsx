@@ -34,7 +34,7 @@ export function DashboardLayout() {
                         <Building2 className="h-4 w-4 text-white" />
                     </div>
                     <span className="font-bold text-slate-900 dark:text-white text-lg tracking-tight whitespace-nowrap hidden sm:block">
-                        Makazi<span className="text-emerald-600 dark:text-emerald-400">Hub</span>
+                        PM<span className="text-emerald-600 dark:text-emerald-400">S</span>
                     </span>
                 </div>
 

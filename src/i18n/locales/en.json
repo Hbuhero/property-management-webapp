@@ -1,6 +1,6 @@
 {
     "common": {
-        "appName": "MakaziHub",
+        "appName": "PMS",
         "login": "Login",
         "logout": "Logout",
         "loading": "Loading...",
@@ -17,7 +17,7 @@
     },
     "auth": {
         "loginTitle": "Welcome Back",
-        "loginSubtitle": "Sign in to your MakaziHub account",
+        "loginSubtitle": "Sign in to your PMS account",
         "loginSuccess": "Login successful!",
         "loginError": "Invalid email or password.",
         "logoutSuccess": "You have been logged out.",

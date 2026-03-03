@@ -62,7 +62,7 @@ const Navbar = () => {
   return (
     <div className="fixed top-0 w-full z-50 flex justify-center px-4 sm:px-6 pointer-events-none transition-all duration-500">
       <nav
-        className={`pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 overflow-hidden ${scrolled
+        className={`pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 ${scrolled
           ? 'w-full max-w-4xl rounded-full py-2.5 px-6 mt-4 bg-white/80 dark:bg-slate-900/80 shadow-lg'
           : 'w-full max-w-7xl rounded-3xl py-4.5 px-8 mt-6 bg-white/60 dark:bg-slate-900/60 shadow-md'
           }`}
@@ -76,7 +76,7 @@ const Navbar = () => {
               <Building2 className="text-white w-5 h-5" />
             </div>
             <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white transition-colors duration-200">
-              Makazi<span className="text-emerald-600 dark:text-emerald-400">Hub</span>
+              PM<span className="text-emerald-600 dark:text-emerald-400">S</span>
             </span>
           </Link>
 
