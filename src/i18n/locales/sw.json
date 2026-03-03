@@ -1,0 +1,51 @@
+{
+    "common": {
+        "appName": "MakaziHub",
+        "login": "Ingia",
+        "logout": "Toka",
+        "loading": "Inapakia...",
+        "profile": "Wasifu",
+        "email": "Barua pepe",
+        "password": "Nenosiri",
+        "save": "Hifadhi",
+        "cancel": "Ghairi",
+        "delete": "Futa",
+        "edit": "Hariri",
+        "search": "Tafuta",
+        "filter": "Chuja",
+        "back": "Rudi"
+    },
+    "auth": {
+        "loginTitle": "Karibu Tena",
+        "loginSubtitle": "Ingia kwenye akaunti yako ya MakaziHub",
+        "loginSuccess": "Umeingia mfumo!",
+        "loginError": "Barua pepe au nenosiri si sahihi.",
+        "logoutSuccess": "Umetoka mfumoni.",
+        "forgotPassword": "Umesahau nenosiri?",
+        "emailPlaceholder": "wewe@mfano.com",
+        "passwordPlaceholder": "••••••••"
+    },
+    "nav": {
+        "home": "Nyumbani",
+        "marketplace": "Soko",
+        "dashboard": "Dashibodi",
+        "properties": "Nyumba",
+        "tenants": "Wapangaji",
+        "payments": "Malipo",
+        "reports": "Ripoti",
+        "settings": "Mipangilio"
+    },
+    "property": {
+        "title": "Nyumba",
+        "rent": "Kodi",
+        "bedrooms": "Vyumba vya kulala",
+        "bathrooms": "Vyumba vya kuogea",
+        "available": "Inapatikana",
+        "unavailable": "Haipatikani",
+        "location": "Mahali",
+        "description": "Maelezo",
+        "viewDetails": "Tazama Maelezo",
+        "addProperty": "Ongeza Nyumba",
+        "editProperty": "Hariri Nyumba"
+    }
+}

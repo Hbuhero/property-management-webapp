@@ -1,0 +1,51 @@
+{
+    "common": {
+        "appName": "MakaziHub",
+        "login": "Login",
+        "logout": "Logout",
+        "loading": "Loading...",
+        "profile": "Profile",
+        "email": "Email",
+        "password": "Password",
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "search": "Search",
+        "filter": "Filter",
+        "back": "Back"
+    },
+    "auth": {
+        "loginTitle": "Welcome Back",
+        "loginSubtitle": "Sign in to your MakaziHub account",
+        "loginSuccess": "Login successful!",
+        "loginError": "Invalid email or password.",
+        "logoutSuccess": "You have been logged out.",
+        "forgotPassword": "Forgot password?",
+        "emailPlaceholder": "you@example.com",
+        "passwordPlaceholder": "••••••••"
+    },
+    "nav": {
+        "home": "Home",
+        "marketplace": "Marketplace",
+        "dashboard": "Dashboard",
+        "properties": "Properties",
+        "tenants": "Tenants",
+        "payments": "Payments",
+        "reports": "Reports",
+        "settings": "Settings"
+    },
+    "property": {
+        "title": "Property",
+        "rent": "Rent",
+        "bedrooms": "Bedrooms",
+        "bathrooms": "Bathrooms",
+        "available": "Available",
+        "unavailable": "Unavailable",
+        "location": "Location",
+        "description": "Description",
+        "viewDetails": "View Details",
+        "addProperty": "Add Property",
+        "editProperty": "Edit Property"
+    }
+}
