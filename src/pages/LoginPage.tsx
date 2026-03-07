@@ -7,6 +7,7 @@ import { useLoginMutation } from '@/queries/auth.queries';
 import { showSuccess, showError } from '@/lib/toast';
 import { loginSchema } from '@/schemas/auth.schema';
 import type { UserRole } from '@/store/slices/authSlice';
+import FileUpload from '@/components/file-upload';
 
 export default function LoginPage() {
     const { t } = useTranslation();
@@ -133,6 +134,8 @@ export default function LoginPage() {
                         </form>
                     </div>
                 </motion.div>
+
+                <FileUpload />
             </div>
         </div>
     );

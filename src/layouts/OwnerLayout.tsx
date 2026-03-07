@@ -1,6 +1,6 @@
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
-    BarChart3, Building, Users, Wallet, FileText
+    BarChart3, Building, Wallet, FileText
 } from 'lucide-react';
 
 const OwnerLayout = () => {

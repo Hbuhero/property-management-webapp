@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, MapPin, Filter, Bed, Bath, Maximize, SlidersHorizontal } from 'lucide-react';
+import { Search, MapPin, Filter, Bed, Bath, Maximize, SlidersHorizontal, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import SiteFooter from '@/components/landing/SiteFooter';
@@ -164,63 +164,6 @@ const Marketplace = () => {
         </div>
       </section>
 
-      {/* ── Trending Regions ────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-16">
-        <div className="flex flex-col mb-10">
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Trending Regions</h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
-            Explore the most sought-after locations for property investments
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-4 h-auto md:h-[600px]">
-          {trendingRegions.map((region, idx) => (
-            <motion.div
-              key={region.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.1, duration: 0.5 }}
-              whileHover="hover"
-              className={`relative rounded-3xl overflow-hidden cursor-pointer group ${region.colSpan}`}
-            >
-              <motion.img
-                src={region.image}
-                alt={region.name}
-                className="w-full h-full object-cover"
-                variants={{
-                  hover: { scale: 1.05 }
-                }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/20 to-transparent transition-opacity duration-300 pointer-events-none" />
-
-              <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full">
-                <motion.div
-                  variants={{
-                    hover: { y: -5 }
-                  }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight">
-                    {region.name}
-                  </h3>
-                  <div className="flex items-center gap-2 text-emerald-400 font-medium text-sm">
-                    <MapPin className="h-4 w-4" />
-                    {region.properties}
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Decorative top-right badge */}
-              <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-1.5 text-xs font-semibold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
-                Explore →
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
       {/* ── Listings ────────────────────────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-10 gap-4">
@@ -237,7 +180,7 @@ const Marketplace = () => {
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 8 }).map((_, i) => (
+            {Array.from({ length: 9 }).map((_, i) => (
               <div key={i} className="rounded-2xl overflow-hidden">
                 <Skeleton className="h-48 rounded-2xl rounded-b-none" />
                 <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 border-t-0 rounded-b-2xl p-4 space-y-2">
@@ -303,6 +246,100 @@ const Marketplace = () => {
             ))}
           </div>
         )}
+
+        <div className="mt-10 flex justify-end">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.3 }}
+          >
+            <Link
+              to="/properties"
+              className="group flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:shadow-emerald-600/20 transition-all duration-300"
+            >
+              <span>View More Properties</span>
+              <ArrowRight className="h-4 w-4 transform group-hover:translate-x-1 transition-transform duration-300" />
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Trending Regions ──────────────────────────────────────────────────  */}
+      <section className="py-24 bg-slate-50 dark:bg-slate-800/50 transition-colors duration-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col mb-10">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Trending Regions</h2>
+            <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
+              Explore the most sought-after locations for property investments
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-4 h-auto md:h-[600px]">
+            {trendingRegions.map((region, idx) => (
+              <motion.div
+                key={region.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1, duration: 0.5 }}
+                whileHover="hover"
+                className={`relative rounded-3xl overflow-hidden cursor-pointer group ${region.colSpan}`}
+              >
+                <motion.img
+                  src={region.image}
+                  alt={region.name}
+                  className="w-full h-full object-cover"
+                  variants={{
+                    hover: { scale: 1.05 }
+                  }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/20 to-transparent transition-opacity duration-300 pointer-events-none" />
+
+                <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full">
+                  <motion.div
+                    variants={{
+                      hover: { y: -5 }
+                    }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight">
+                      {region.name}
+                    </h3>
+                    <div className="flex items-center gap-2 text-emerald-400 font-medium text-sm">
+                      <MapPin className="h-4 w-4" />
+                      {region.properties}
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Decorative top-right badge */}
+                <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-1.5 text-xs font-semibold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
+                  Explore →
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-10 flex justify-end">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.3 }}
+            >
+              <Link
+                to="/regions"
+                className="group flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-full font-semibold shadow-sm hover:shadow-md hover:border-emerald-500 dark:hover:border-emerald-500 transition-all duration-300"
+              >
+                <span>Explore All Regions</span>
+                <ArrowRight className="h-4 w-4 text-emerald-500 transform group-hover:translate-x-1 transition-transform duration-300" />
+              </Link>
+            </motion.div>
+          </div>
+        </div>
+
       </section>
 
       <SiteFooter />

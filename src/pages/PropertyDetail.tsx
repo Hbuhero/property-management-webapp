@@ -26,7 +26,7 @@ const PropertyDetail = () => {
   };
 
   return (
-    <div className="pt-24 pb-20 bg-slate-50 min-h-screen">
+    <div className="pt-30 pb-20 bg-slate-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4">
         {/* Breadcrumbs / Back */}
         <button
