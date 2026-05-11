@@ -1,6 +1,6 @@
 ---
 name: Visual Property Map feature
-overview: Implement the Visual Property Map feature (V2 image-overlay approach) as a continuation of the prerequisite plan. Delivers public floor map browsing and admin tooling for floor plan upload + overlay editing.
+overview: Implement the Visual Property Map feature (V2 image-overlay approach) as a continuation of the prerequisite plan. Delivers public floor map browsing and admin tooling for floor plan upload + overlay editing. Domain strategy — Option B (Property as building root); see backend visualmap README.
 depends_on:
   - /home/lynx/Desktop/property-management-webapp/.cursor/plans/pre_visual_map_feature.plan.md
 specs:
@@ -10,25 +10,25 @@ approach: Use V2 (floor plan image + CSS absolute overlays + percentage coordina
 todos:
   - id: vm-00-domain-design
     content: Choose the backend domain integration strategy (new VisualMap domain vs integrating under existing Property) and define the minimal entity relationships and endpoint paths.
-    status: pending
+    status: completed
   - id: vm-01-backend-persistence
     content: Add backend entities + repositories for floor plans and overlays (and building/floor/unit if new domain), ensuring efficient queries (avoid N+1).
-    status: pending
+    status: completed
   - id: vm-02-backend-storage-serving
     content: Implement floor plan image storage and safe public serving with a stable URL scheme.
-    status: pending
+    status: completed
   - id: vm-03-backend-apis
     content: Implement public + admin Visual Map APIs and wire RBAC + validation + error shapes.
-    status: pending
+    status: completed
   - id: vm-04-frontend-api-hooks
     content: Implement webapp API layer + React Query hooks for floor map retrieval and admin mutations.
-    status: pending
+    status: completed
   - id: vm-05-frontend-public-ui
     content: Implement floor map page (image + overlays + selection panel) with accessibility and loading/error states.
-    status: pending
+    status: completed
   - id: vm-06-frontend-admin-ui
     content: Implement admin pages for uploading floor plans and drawing/saving overlays, including unit status toggling.
-    status: pending
+    status: completed
   - id: vm-07-tests-quality
     content: Add focused backend integration tests and frontend component tests for overlay math and permission gates.
     status: pending
@@ -43,6 +43,8 @@ todos:
 ## Step-by-step implementation plan
 
 ### 0) Domain design (small but critical)
+
+**Selected: Option B** — integrate under existing `Property` (see `property-management/src/main/java/dev/hud/PropertyManagementSystem/visualmap/README.md`).
 
 Pick one and document it in code as a module-level README:
 

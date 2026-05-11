@@ -22,6 +22,11 @@ function joinUrl(path: string): string {
     return `${base}${p}`;
 }
 
+/** Absolute URL on the API origin (e.g. static floor plan images served by Spring). */
+export function joinApiUrl(path: string): string {
+    return joinUrl(path);
+}
+
 export type ApiJsonOptions = RequestInit & {
     /** Skip attaching Bearer token (e.g. login). */
     skipAuth?: boolean;

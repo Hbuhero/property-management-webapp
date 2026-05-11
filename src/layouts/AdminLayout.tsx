@@ -1,6 +1,6 @@
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
-    ShieldAlert, Users, Activity, Settings, ShieldCheck
+    ShieldAlert, Users, Activity, Settings, ShieldCheck, LayoutGrid,
 } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -10,6 +10,7 @@ const AdminLayout = () => {
         { name: 'System Health', path: '/admin', icon: Activity },
         { name: 'User Central', path: '/admin/users', icon: Users },
         { name: 'Security Logs', path: '/admin/security', icon: ShieldAlert },
+        { name: 'Visual map', path: '/admin/visual-map', icon: LayoutGrid },
         { name: 'Settings', path: '/admin/settings', icon: Settings },
     ];
 
@@ -32,7 +33,10 @@ const AdminLayout = () => {
                     <nav className="space-y-1">
                         {navItems.map((item) => {
                             const Icon = item.icon;
-                            const isActive = location.pathname === item.path || (item.path === '/admin' && location.pathname === '/admin');
+                            const isActive =
+                                item.path === '/admin'
+                                    ? location.pathname === '/admin' || location.pathname === '/admin/'
+                                    : location.pathname === item.path;
                             return (
                                 <Link
                                     key={item.path}

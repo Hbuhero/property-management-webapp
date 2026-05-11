@@ -60,6 +60,12 @@ const router = createBrowserRouter([
                     Component: (await import('./pages/PropertyDetail')).default,
                 }),
             },
+            {
+                path: '/floors/:floorId/map',
+                lazy: async () => ({
+                    Component: (await import('./pages/FloorMapPage')).default,
+                }),
+            },
         ],
     },
 
@@ -98,6 +104,12 @@ const router = createBrowserRouter([
                                 path: 'security',
                                 lazy: async () => ({
                                     Component: (await import('./pages/admin/SecurityLogs')).default,
+                                }),
+                            },
+                            {
+                                path: 'visual-map',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/admin/VisualMapAdmin')).default,
                                 }),
                             },
                         ],

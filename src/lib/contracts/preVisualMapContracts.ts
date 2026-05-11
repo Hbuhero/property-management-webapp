@@ -76,6 +76,53 @@ export const SignupResponseSchema = z.object({
 
 export type SignupResponseDto = z.infer<typeof SignupResponseSchema>;
 
+/** Unit status on the visual map (matches backend {@code FloorUnitStatus}). */
+export const MapUnitStatusSchema = z.enum(['AVAILABLE', 'OCCUPIED']);
+
+export type MapUnitStatus = z.infer<typeof MapUnitStatusSchema>;
+
+/** One unit row from {@code GET /api/v1/floors/{floorId}/map}. */
+export const UnitMapUnitSchema = z.object({
+    unitId: z.number(),
+    unitNumber: z.string(),
+    bedrooms: z.number().nullable().optional(),
+    sizeM2: z.number().nullable().optional(),
+    monthlyRent: z.number().nullable().optional(),
+    status: MapUnitStatusSchema,
+    xPct: z.number(),
+    yPct: z.number(),
+    wPct: z.number(),
+    hPct: z.number(),
+});
+
+/** {@code GET /api/v1/floors/{floorId}/map} success body. */
+export const FloorMapResponseSchema = z.object({
+    floorId: z.number(),
+    floorLabel: z.string(),
+    imageUrl: z.string().nullable(),
+    units: z.array(UnitMapUnitSchema),
+});
+
+export type FloorMapDto = z.infer<typeof FloorMapResponseSchema>;
+export type UnitMapUnitDto = z.infer<typeof UnitMapUnitSchema>;
+
+/** Admin overlay body — {@code PUT .../admin/floors/units/{unitId}/overlay}. */
+export const UnitOverlayPutBodySchema = z.object({
+    xPct: z.number().min(0).max(100),
+    yPct: z.number().min(0).max(100),
+    wPct: z.number().min(0).max(100),
+    hPct: z.number().min(0).max(100),
+});
+
+export type UnitOverlayPutBody = z.infer<typeof UnitOverlayPutBodySchema>;
+
+/** Admin status patch — {@code PATCH .../admin/floors/units/{unitId}/status}. */
+export const UnitStatusPatchBodySchema = z.object({
+    status: MapUnitStatusSchema,
+});
+
+export type UnitStatusPatchBody = z.infer<typeof UnitStatusPatchBodySchema>;
+
 /** Visual Map (V2) — public + admin routes under {@link API_V1_PREFIX}. */
 export const VisualMapApi = {
     /** {@code GET /api/v1/floors/{floorId}/map} — public, unauthenticated read. */
