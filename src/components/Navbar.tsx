@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Building2, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,6 +26,7 @@ const NAV_LINKS: NavLink[] = [
 
 // ── Main Navbar ───────────────────────────────────────────────────────────────
 const Navbar = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -117,10 +119,17 @@ const Navbar = () => {
             <div className="w-px h-5 bg-slate-300 dark:bg-slate-700 mx-1" />
 
             <Link
+              to="/register"
+              className="hidden sm:inline-flex text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-2 rounded-full transition-colors"
+            >
+              {t('auth.registerNav')}
+            </Link>
+
+            <Link
               to="/login"
               className="inline-flex items-center gap-1.5 bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2 rounded-full transition-all shadow-sm hover:shadow-emerald-500/25"
             >
-              Sign In
+              {t('auth.signInNav')}
             </Link>
           </div>
 
@@ -174,13 +183,20 @@ const Navbar = () => {
                 )
               )}
 
-              <div className="pt-2 pb-1 px-1">
+              <div className="pt-2 pb-1 px-1 space-y-2">
+                <Link
+                  to="/register"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full border border-emerald-600 text-emerald-700 dark:text-emerald-400 font-semibold px-4 py-3 rounded-2xl transition-colors"
+                >
+                  {t('auth.registerNav')}
+                </Link>
                 <Link
                   to="/login"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center justify-center gap-2 w-full bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-700 text-white font-semibold px-4 py-3.5 rounded-2xl transition-colors shadow-sm"
                 >
-                  Sign In / Sign Up
+                  {t('auth.signInNav')}
                 </Link>
               </div>
             </div>

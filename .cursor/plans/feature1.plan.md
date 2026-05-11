@@ -1,3 +1,39 @@
+---
+name: Feature 1 — User management and authentication
+overview: Align auth and user admin APIs with the React app; stable JWT lifecycle, RBAC, shared API client, and optional register/refresh flows.
+todos:
+  - id: f1-01-verify-method-security
+    content: "Backend: confirm @EnableMethodSecurity is active and @PreAuthorize on UserController (and any AuthController rules) is enforced; run F1-08/F1-09 smoke (403 for wrong role)."
+    status: completed
+  - id: f1-02-verify-role-authorities
+    content: "Backend: confirm UserPrincipal grants ROLE_* authorities and matches all hasRole('...') usages; grep controllers for mismatches."
+    status: completed
+  - id: f1-03-unify-jwt-subject
+    content: "Backend: pick one JWT subject strategy (email vs user id); align generateJwtToken, generateJwtTokenByUser, activate-account, refresh-token, and JwtRequestFilter + CustomUserDetailService loading."
+    status: completed
+  - id: f1-04-role-model-and-persistence
+    content: "Backend: align Role enum and User model with spec (incl. CARETAKER/LANDLORD naming); add Flyway/Liquibase or documented SQL migration + data mapping from legacy role strings if needed."
+    status: cancelled
+  - id: f1-05-login-contract-and-openapi
+    content: "Backend: ensure LoginResponse (and profile DTOs) expose all fields the FE needs; document auth + /users in OpenAPI with Bearer scheme and response codes."
+    status: completed
+  - id: f1-06-register-path-alias-or-docs
+    content: "Backend: add POST /api/v1/auth/register alias to signup OR document /signup as canonical in OpenAPI/README for API consumers."
+    status: completed
+  - id: f1-07-frontend-api-client-401-refresh
+    content: "Frontend: extend apiClient — on 401 optionally call refresh-token once, retry original request, then logout if refresh fails (phase 2 per plan)."
+    status: completed
+  - id: f1-08-frontend-auth-types-and-schemas
+    content: "Frontend: align Zod auth schemas + authSlice with backend (roles array, tokenType, status, CARETAKER); centralize mapBackendRole + ROLE_HOME with router paths."
+    status: completed
+  - id: f1-09-frontend-register-activation-optional
+    content: "Frontend (optional): register page, activate-account deep link, resend-verification-email; wire mutations and post-activation redirect."
+    status: completed
+  - id: f1-10-acceptance-and-regression
+    content: "QA: tick acceptance criteria checklist; run testing benchmark F1-01–F1-10 and F1-FE-01/F1-FE-02; after security changes re-run F1-01, F1-05, F1-08."
+    status: pending
+---
+
 # Feature 1 — User management and authentication
 
 Aligns the spec (register/login, roles, admin user APIs) with the existing Spring Boot auth stack and wires the React app to real endpoints.

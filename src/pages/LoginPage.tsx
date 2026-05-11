@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Building2 } from 'lucide-react';
 import { useLoginMutation } from '@/queries/auth.queries';
 import { showSuccess, showError } from '@/lib/toast';
+import { homePathForRole } from '@/lib/authRole';
 import { loginSchema } from '@/schemas/auth.schema';
 import type { UserRole } from '@/store/slices/authSlice';
 import FileUpload from '@/components/file-upload';
@@ -36,7 +37,7 @@ export default function LoginPage() {
             const data = await loginMutation.mutateAsync({ email, password });
             showSuccess(t('auth.loginSuccess'));
             const role: UserRole = data.user.role;
-            navigate(`/${role}`);
+            navigate(homePathForRole(role));
         } catch {
             showError(t('auth.loginError'));
         }
@@ -65,10 +66,8 @@ export default function LoginPage() {
                             </div>
                             {/* Demo credentials hint */}
                             <div className="text-left w-full bg-white/10 rounded-xl p-4 text-xs text-white/80 space-y-1">
-                                <p className="font-semibold text-white mb-2">Demo accounts (password: "password")</p>
-                                <p>admin@demo.com → Admin</p>
-                                <p>tenant@demo.com → Tenant</p>
-                                <p>owner@demo.com → Owner</p>
+                                <p className="font-semibold text-white mb-2">Backend sign-in</p>
+                                <p>Use an active account from your PMS database. API base URL defaults to http://localhost:8080 unless you set VITE_API_BASE_URL.</p>
                             </div>
                         </div>
                     </div>
@@ -132,6 +131,13 @@ export default function LoginPage() {
                                 {loginMutation.isPending ? t('common.loading') : t('common.login')}
                             </button>
                         </form>
+
+                        <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
+                            {t('auth.noAccount')}{' '}
+                            <Link to="/register" className="text-emerald-600 font-semibold hover:underline">
+                                {t('auth.createAccount')}
+                            </Link>
+                        </p>
                     </div>
                 </motion.div>
 
