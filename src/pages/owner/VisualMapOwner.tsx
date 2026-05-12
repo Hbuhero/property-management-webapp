@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, ImagePlus, LayoutGrid, Trash2, Upload } from 'lucide-react';
 import { uploadListingImage } from '@/api/fileUploadApi';
@@ -392,41 +392,26 @@ function parsePositiveIntParam(raw: string | null): number | null {
     return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-export default function VisualMapOwner() {
-    const location = useLocation();
-    const base = location.pathname.startsWith('/landlord') ? '/landlord' : '/owner';
-    const [searchParams, setSearchParams] = useSearchParams();
-    const propertyIdParamRaw = searchParams.get('propertyId');
-    const propertyIdNum = parsePositiveIntParam(propertyIdParamRaw);
-    const propertyIdInvalid =
-        propertyIdParamRaw != null && propertyIdParamRaw !== '' && propertyIdNum == null;
+type VisualMapOwnerInnerProps = {
+    base: string;
+    propertyIdNum: number | null;
+    propertyIdInvalid: boolean;
+    validFloorFromUrl: string | null;
+    patchQuery: (updates: Record<string, string | undefined>) => void;
+};
 
-    const floorIdRaw = searchParams.get('floorId');
-    const validFloorFromUrl = floorIdRaw && /^\d+$/.test(floorIdRaw) ? floorIdRaw : null;
-
+function VisualMapOwnerInner({
+    base,
+    propertyIdNum,
+    propertyIdInvalid,
+    validFloorFromUrl,
+    patchQuery,
+}: VisualMapOwnerInnerProps) {
     const propertiesQuery = useOwnerProperties({ page: 0, size: 100 });
     const floorsQuery = useOwnerFloors(propertyIdNum);
 
     const [floorInput, setFloorInput] = useState(() => validFloorFromUrl ?? '');
     const [loadedFloorId, setLoadedFloorId] = useState<string | null>(() => validFloorFromUrl);
-
-    useEffect(() => {
-        if (validFloorFromUrl) {
-            setFloorInput(validFloorFromUrl);
-            setLoadedFloorId(validFloorFromUrl);
-        }
-    }, [validFloorFromUrl]);
-
-    const patchQuery = (updates: Record<string, string | undefined>) => {
-        setSearchParams((prev) => {
-            const next = new URLSearchParams(prev);
-            for (const [k, v] of Object.entries(updates)) {
-                if (v === undefined || v === '') next.delete(k);
-                else next.set(k, v);
-            }
-            return next;
-        });
-    };
 
     const selectProperty = (id: number) => {
         setLoadedFloorId(null);
@@ -477,7 +462,7 @@ export default function VisualMapOwner() {
     const pickerValue =
         loadedFloorId && floors.some((f) => String(f.id) === loadedFloorId) ? loadedFloorId : '';
 
-    const propertyRecords = propertiesQuery.data?.records ?? [];
+    const propertyRecords = useMemo(() => propertiesQuery.data?.records ?? [], [propertiesQuery.data]);
     const selectedProperty = useMemo(
         () => propertyRecords.find((p) => p.id === propertyIdNum) ?? null,
         [propertyRecords, propertyIdNum],
@@ -689,5 +674,40 @@ export default function VisualMapOwner() {
                 </p>
             )}
         </div>
+    );
+}
+
+export default function VisualMapOwner() {
+    const location = useLocation();
+    const base = location.pathname.startsWith('/landlord') ? '/landlord' : '/owner';
+    const [searchParams, setSearchParams] = useSearchParams();
+    const propertyIdParamRaw = searchParams.get('propertyId');
+    const propertyIdNum = parsePositiveIntParam(propertyIdParamRaw);
+    const propertyIdInvalid =
+        propertyIdParamRaw != null && propertyIdParamRaw !== '' && propertyIdNum == null;
+
+    const floorIdRaw = searchParams.get('floorId');
+    const validFloorFromUrl = floorIdRaw && /^\d+$/.test(floorIdRaw) ? floorIdRaw : null;
+
+    const patchQuery = (updates: Record<string, string | undefined>) => {
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            for (const [k, v] of Object.entries(updates)) {
+                if (v === undefined || v === '') next.delete(k);
+                else next.set(k, v);
+            }
+            return next;
+        });
+    };
+
+    return (
+        <VisualMapOwnerInner
+            key={`${propertyIdNum ?? 'none'}-${validFloorFromUrl ?? ''}`}
+            base={base}
+            propertyIdNum={propertyIdNum}
+            propertyIdInvalid={propertyIdInvalid}
+            validFloorFromUrl={validFloorFromUrl}
+            patchQuery={patchQuery}
+        />
     );
 }

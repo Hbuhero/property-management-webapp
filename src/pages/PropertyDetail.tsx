@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
     MapPin,
-    Bed,
-    Bath,
+    Building2,
+    Home,
     Maximize,
     CheckCircle2,
     ChevronLeft,
@@ -14,6 +14,7 @@ import {
     Phone,
     LayoutGrid,
     ExternalLink,
+    Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { resolvePropertyImageUrl, resolveFloorThumbnailUrl } from '@/lib/propertyMediaUrl';
@@ -94,6 +95,17 @@ const PropertyDetail = () => {
         return urls.length > 0 ? urls : PLACEHOLDER_GALLERY;
     }, [detailQuery.data?.galleryImages]);
 
+    const unitStats = useMemo(() => {
+        const list = detailQuery.data?.floors ?? [];
+        let t = 0;
+        let a = 0;
+        for (const f of list) {
+            t += f.unitCount;
+            a += f.availableUnitCount;
+        }
+        return { totalUnits: t, availableUnits: a };
+    }, [detailQuery.data?.floors]);
+
     const property = detailQuery.data;
 
     if (detailQuery.isPending) {
@@ -134,6 +146,7 @@ const PropertyDetail = () => {
     const floors = property.floors ?? [];
     const features = property.amenities;
     const listingGalleryKey = `${id}-${(property.galleryImages ?? []).map((g) => g.id).join('-') || 'none'}-${images.length}`;
+    const { totalUnits, availableUnits } = unitStats;
 
     return (
         <div className="pt-30 pb-20 bg-slate-50 dark:bg-slate-950 min-h-screen">
@@ -181,27 +194,31 @@ const PropertyDetail = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-4 mb-8">
-                                <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl flex flex-col items-center justify-center">
-                                    <Bed className="text-emerald-600 mb-2" />
+                            <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-3">
+                                <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
+                                    <Building2 className="text-emerald-600 mb-2 h-6 w-6" aria-hidden />
                                     <span className="text-sm text-slate-500 dark:text-slate-400">
-                                        Bedrooms
+                                        Available apartments
                                     </span>
-                                    <span className="font-bold text-slate-900 dark:text-white">—</span>
+                                    <span className="font-bold text-slate-900 dark:text-white text-xl tabular-nums">
+                                        {availableUnits}
+                                    </span>
                                 </div>
-                                <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl flex flex-col items-center justify-center">
-                                    <Bath className="text-emerald-600 mb-2" />
+                                <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
+                                    <Home className="text-emerald-600 mb-2 h-6 w-6" aria-hidden />
                                     <span className="text-sm text-slate-500 dark:text-slate-400">
-                                        Bathrooms
+                                        Total apartments
                                     </span>
-                                    <span className="font-bold text-slate-900 dark:text-white">—</span>
+                                    <span className="font-bold text-slate-900 dark:text-white text-xl tabular-nums">
+                                        {totalUnits}
+                                    </span>
                                 </div>
-                                <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl flex flex-col items-center justify-center">
-                                    <Maximize className="text-emerald-600 mb-2" />
+                                <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
+                                    <Maximize className="text-emerald-600 mb-2 h-6 w-6" aria-hidden />
                                     <span className="text-sm text-slate-500 dark:text-slate-400">
                                         Layout
                                     </span>
-                                    <span className="font-bold text-slate-900 dark:text-white text-center text-xs">
+                                    <span className="font-bold text-slate-900 dark:text-white text-xs">
                                         Per unit (map)
                                     </span>
                                 </div>
@@ -219,8 +236,9 @@ const PropertyDetail = () => {
 
                             {features.length > 0 ? (
                                 <div className="mt-8">
-                                    <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">
-                                        Highlights
+                                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
+                                        <Sparkles className="h-5 w-5 text-emerald-600" aria-hidden />
+                                        Building amenities
                                     </h3>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                         {features.map((feature) => (
@@ -284,6 +302,14 @@ const PropertyDetail = () => {
                                                         <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 p-4">
                                                             <span className="font-semibold text-slate-900 dark:text-white">
                                                                 {f.label}
+                                                            </span>
+                                                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                                {f.unitCount} apartment{f.unitCount === 1 ? '' : 's'} ·{' '}
+                                                                <span className="text-emerald-600 dark:text-emerald-400">
+                                                                    {f.availableUnitCount} available
+                                                                </span>
+                                                                {' · '}
+                                                                {f.occupiedUnitCount} occupied
                                                             </span>
                                                             <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                                                                 Open map

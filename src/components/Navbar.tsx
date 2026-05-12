@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import type { TFunction } from 'i18next';
+import { Link, useLocation, useNavigate, type NavigateFunction } from 'react-router-dom';
 import { Building2, Menu, X, UserRound } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
@@ -24,34 +25,33 @@ const NAV_LINKS: NavLink[] = [
   { key: 'marketplace', label: 'Marketplace', href: '/marketplace', isRoute: true },
 ];
 
+type NavbarMobileProps = {
+  pathname: string;
+  navigate: NavigateFunction;
+  isActive: (href: string) => boolean;
+  isAuthenticated: boolean;
+  user: { name?: string | null; email: string } | null;
+  dashboardHref: string;
+  t: TFunction;
+};
 
-
-
-// ── Main Navbar ───────────────────────────────────────────────────────────────
-const Navbar = () => {
-  const { t } = useTranslation();
+/** `key={pathname}` remounts on route change so the menu closes without syncing state in an effect. */
+function NavbarMobile({
+  pathname,
+  navigate,
+  isActive,
+  isAuthenticated,
+  user,
+  dashboardHref,
+  t,
+}: NavbarMobileProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { isAuthenticated, user } = useSelector((s: RootState) => s.auth);
-  const dashboardHref = user ? homePathForRole(user.role) : '/';
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Close mobile menu on route change
-  useEffect(() => { setIsOpen(false); }, [location.pathname]);
 
   const handleAnchorClick = (href: string) => {
     setIsOpen(false);
     if (href.startsWith('/#')) {
-      if (location.pathname !== '/') {
+      if (pathname !== '/') {
         navigate('/');
-        // short delay to let the page render before scrolling
         setTimeout(() => {
           document.getElementById(href.slice(2))?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
@@ -61,118 +61,27 @@ const Navbar = () => {
     }
   };
 
-  const isActive = (href: string) =>
-    href.startsWith('/#')
-      ? false
-      : location.pathname === href;
-
   return (
-    <div className="fixed top-0 w-full z-50 flex justify-center px-4 sm:px-6 pointer-events-none transition-all duration-500">
-      <nav
-        className={`pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 ${scrolled
-          ? 'w-full max-w-4xl rounded-full py-2.5 px-6 mt-4 bg-white/80 dark:bg-slate-900/80 shadow-lg'
-          : 'w-full max-w-7xl rounded-3xl py-4.5 px-8 mt-6 bg-white/60 dark:bg-slate-900/60 shadow-md'
-          }`}
-      >
-        {/* ── 3-column layout: logo  |  nav  |  actions ── */}
-        <div className="grid grid-cols-2 md:grid-cols-3 items-center w-full">
+    <div className="md:contents relative">
+      <div className="md:hidden flex items-center gap-2 justify-self-end">
+        <LanguageSwitcher />
+        <ThemeToggle />
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle menu"
+          className="h-9 w-9 inline-flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
+        >
+          {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+      </div>
 
-          {/* LEFT — Logo */}
-          <Link to="/" className="flex items-center gap-2 justify-self-start">
-            <div className="bg-emerald-600 p-1.5 rounded-lg shrink-0">
-              <Building2 className="text-white w-5 h-5" />
-            </div>
-            <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white transition-colors duration-200">
-              PM<span className="text-emerald-600 dark:text-emerald-400">S</span>
-            </span>
-          </Link>
-
-          {/* CENTER — Desktop nav links */}
-          <div className="hidden md:flex items-center justify-center gap-1">
-            {NAV_LINKS.map((link) =>
-              link.isRoute ? (
-                <Link
-                  key={link.key}
-                  to={link.href}
-                  className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${isActive(link.href)
-                    ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
-                    }`}
-                >
-                  {link.label}
-                </Link>
-              ) : (
-                <button
-                  key={link.key}
-                  onClick={() => handleAnchorClick(link.href)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${scrolled
-                    ? 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
-                    : 'text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-white/40 dark:hover:bg-slate-800/40'
-                    }`}
-                >
-                  {link.label}
-                </button>
-              )
-            )}
-          </div>
-
-          {/* RIGHT — Actions */}
-          <div className="hidden md:flex items-center gap-2 justify-self-end">
-            <LanguageSwitcher />
-            <ThemeToggle />
-
-            <div className="w-px h-5 bg-slate-300 dark:bg-slate-700 mx-1" />
-
-            {isAuthenticated && user ? (
-              <Link
-                to={dashboardHref}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:border-emerald-500/40 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-100 dark:hover:border-emerald-500/30 dark:hover:text-emerald-400"
-              >
-                <UserRound className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-                <span className="max-w-[10rem] truncate">{user.name?.trim() || user.email}</span>
-              </Link>
-            ) : (
-              <>
-                <Link
-                  to="/register"
-                  className="hidden sm:inline-flex text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-2 rounded-full transition-colors"
-                >
-                  {t('auth.registerNav')}
-                </Link>
-
-                <Link
-                  to="/login"
-                  className="inline-flex items-center gap-1.5 bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2 rounded-full transition-all shadow-sm hover:shadow-emerald-500/25"
-                >
-                  {t('auth.signInNav')}
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* MOBILE — Hamburger */}
-          <div className="md:hidden flex items-center gap-2 justify-self-end">
-            <LanguageSwitcher />
-            <ThemeToggle />
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              aria-label="Toggle menu"
-              className="h-9 w-9 inline-flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
-            >
-              {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* ── Mobile dropdown menu ── */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
             className="absolute top-full mt-2 w-[calc(100%-2rem)] max-w-md mx-auto pointer-events-auto md:hidden overflow-hidden bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-700/50 rounded-3xl shadow-2xl"
           >
             <div className="p-3 space-y-1">
@@ -233,6 +142,140 @@ const Navbar = () => {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+
+// ── Main Navbar ───────────────────────────────────────────────────────────────
+const Navbar = () => {
+  const { t } = useTranslation();
+  const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useSelector((s: RootState) => s.auth);
+  const dashboardHref = user ? homePathForRole(user.role) : '/';
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleAnchorClick = (href: string) => {
+    if (href.startsWith('/#')) {
+      if (location.pathname !== '/') {
+        navigate('/');
+        setTimeout(() => {
+          document.getElementById(href.slice(2))?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      } else {
+        document.getElementById(href.slice(2))?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
+  const isActive = (href: string) =>
+    href.startsWith('/#')
+      ? false
+      : location.pathname === href;
+
+  return (
+    <div className="fixed top-0 w-full z-50 flex justify-center px-4 sm:px-6 pointer-events-none transition-all duration-500">
+      <nav
+        className={`pointer-events-auto relative transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 ${scrolled
+          ? 'w-full max-w-4xl rounded-full py-2.5 px-6 mt-4 bg-white/80 dark:bg-slate-900/80 shadow-lg'
+          : 'w-full max-w-7xl rounded-3xl py-4.5 px-8 mt-6 bg-white/60 dark:bg-slate-900/60 shadow-md'
+          }`}
+      >
+        {/* ── 3-column layout: logo  |  nav  |  actions ── */}
+        <div className="grid grid-cols-2 md:grid-cols-3 items-center w-full">
+
+          {/* LEFT — Logo */}
+          <Link to="/" className="flex items-center gap-2 justify-self-start">
+            <div className="bg-emerald-600 p-1.5 rounded-lg shrink-0">
+              <Building2 className="text-white w-5 h-5" />
+            </div>
+            <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white transition-colors duration-200">
+              PM<span className="text-emerald-600 dark:text-emerald-400">S</span>
+            </span>
+          </Link>
+
+          {/* CENTER — Desktop nav links */}
+          <div className="hidden md:flex items-center justify-center gap-1">
+            {NAV_LINKS.map((link) =>
+              link.isRoute ? (
+                <Link
+                  key={link.key}
+                  to={link.href}
+                  className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${isActive(link.href)
+                    ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
+                    }`}
+                >
+                  {link.label}
+                </Link>
+              ) : (
+                <button
+                  key={link.key}
+                  onClick={() => handleAnchorClick(link.href)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${scrolled
+                    ? 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
+                    : 'text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-white/40 dark:hover:bg-slate-800/40'
+                    }`}
+                >
+                  {link.label}
+                </button>
+              )
+            )}
+          </div>
+
+          {/* RIGHT — Actions */}
+          <div className="hidden md:flex items-center gap-2 justify-self-end">
+            <LanguageSwitcher />
+            <ThemeToggle />
+
+            <div className="w-px h-5 bg-slate-300 dark:bg-slate-700 mx-1" />
+
+            {isAuthenticated && user ? (
+              <Link
+                to={dashboardHref}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:border-emerald-500/40 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-100 dark:hover:border-emerald-500/30 dark:hover:text-emerald-400"
+              >
+                <UserRound className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+                <span className="max-w-40 truncate">{user.name?.trim() || user.email}</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/register"
+                  className="hidden sm:inline-flex text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-2 rounded-full transition-colors"
+                >
+                  {t('auth.registerNav')}
+                </Link>
+
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-1.5 bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2 rounded-full transition-all shadow-sm hover:shadow-emerald-500/25"
+                >
+                  {t('auth.signInNav')}
+                </Link>
+              </>
+            )}
+          </div>
+
+          <NavbarMobile
+            key={location.pathname}
+            pathname={location.pathname}
+            navigate={navigate}
+            isActive={isActive}
+            isAuthenticated={isAuthenticated}
+            user={user}
+            dashboardHref={dashboardHref}
+            t={t}
+          />
+        </div>
+      </nav>
     </div>
   );
 };

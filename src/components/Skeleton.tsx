@@ -14,11 +14,13 @@ export const PropertyCardSkeleton = () => (
   </div>
 );
 
+const CHART_BAR_HEIGHTS_PCT = [52, 71, 48, 65, 58, 44] as const;
+
 export const ChartSkeleton = () => (
   <div className="space-y-4">
     <div className="flex justify-between items-end h-64 space-x-2">
-      {[...Array(6)].map((_, i) => (
-        <Skeleton key={i} className="flex-1" style={{ height: `${Math.random() * 60 + 40}%` }} />
+      {CHART_BAR_HEIGHTS_PCT.map((pct, i) => (
+        <Skeleton key={i} className="flex-1" style={{ height: `${pct}%` }} />
       ))}
     </div>
     <div className="flex justify-between">

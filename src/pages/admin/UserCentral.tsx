@@ -42,7 +42,7 @@ const UserCentral = () => {
         size: 100,
     });
 
-    const rows = usersQuery.data?.records ?? [];
+    const rows = useMemo(() => usersQuery.data?.records ?? [], [usersQuery.data]);
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();

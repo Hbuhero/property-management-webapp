@@ -1,10 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAppSelector } from '@/hooks/useAppStore';
 import { showError, showSuccess } from '@/lib/toast';
 import { useAdminUser, useUpdateAdminUser } from '@/queries/adminUsers.queries';
+import type { AdminUserRow } from '@/schemas/adminUser.schema';
 
 const BACKEND_ROLES = ['SUPER_ADMIN', 'ADMIN', 'USER', 'TENANT', 'LAND_LORD'] as const;
 
@@ -19,39 +20,23 @@ const inputClass =
 
 const labelClass = 'block text-sm font-medium text-slate-700 dark:text-slate-200';
 
-const AdminUserDetail = () => {
-    const { userId } = useParams<{ userId: string }>();
-    const navigate = useNavigate();
-    const selfId = useAppSelector((s) => s.auth.user?.id);
-    const isAdmin = useAppSelector((s) =>
-        Boolean(
-            s.auth.user?.backendRoles?.some((r) => {
-                const u = r.toUpperCase();
-                return u === 'ADMIN' || u === 'SUPER_ADMIN';
-            }),
-        ),
-    );
-
-    const detailQuery = useAdminUser(userId);
+function AdminUserEditForm({
+    userId,
+    user,
+    canEditRole,
+}: {
+    userId: string;
+    user: AdminUserRow;
+    canEditRole: boolean;
+}) {
+    const [name, setName] = useState(user.name);
+    const [email, setEmail] = useState(user.email);
+    const [phone, setPhone] = useState(user.phoneNumber);
+    const [role, setRole] = useState<string>(user.roles[0] ?? 'USER');
     const updateMut = useUpdateAdminUser();
-
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-    const [role, setRole] = useState<string>('USER');
-
-    useEffect(() => {
-        const u = detailQuery.data;
-        if (!u) return;
-        setName(u.name);
-        setEmail(u.email);
-        setPhone(u.phoneNumber);
-        setRole(u.roles[0] ?? 'USER');
-    }, [detailQuery.data]);
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        if (!userId) return;
         try {
             await updateMut.mutateAsync({
                 id: userId,
@@ -67,6 +52,73 @@ const AdminUserDetail = () => {
             showError(err instanceof Error ? err.message : 'Update failed');
         }
     };
+
+    return (
+        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6">
+            <label className={labelClass}>
+                Full name
+                <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} required />
+            </label>
+            <label className={labelClass}>
+                Email
+                <input
+                    className={inputClass}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                />
+            </label>
+            <label className={labelClass}>
+                Phone
+                <input className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} required />
+            </label>
+            <label className={labelClass}>
+                Primary role (backend)
+                <select
+                    className={inputClass}
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    disabled={!canEditRole}
+                >
+                    {BACKEND_ROLES.map((r) => (
+                        <option key={r} value={r}>
+                            {r.replace(/_/g, ' ')}
+                        </option>
+                    ))}
+                </select>
+                {!canEditRole ? (
+                    <span className="mt-1 block text-xs text-slate-400">
+                        Only admins can change roles; you cannot change your own role here.
+                    </span>
+                ) : null}
+            </label>
+
+            <button
+                type="submit"
+                disabled={updateMut.isPending}
+                className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+                {updateMut.isPending ? 'Saving…' : 'Save changes'}
+            </button>
+        </form>
+    );
+}
+
+const AdminUserDetail = () => {
+    const { userId } = useParams<{ userId: string }>();
+    const navigate = useNavigate();
+    const selfId = useAppSelector((s) => s.auth.user?.id);
+    const isAdmin = useAppSelector((s) =>
+        Boolean(
+            s.auth.user?.backendRoles?.some((r) => {
+                const u = r.toUpperCase();
+                return u === 'ADMIN' || u === 'SUPER_ADMIN';
+            }),
+        ),
+    );
+
+    const detailQuery = useAdminUser(userId);
 
     if (detailQuery.isPending) {
         return (
@@ -107,54 +159,12 @@ const AdminUserDetail = () => {
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{user.email}</p>
             </div>
 
-            <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6">
-                <label className={labelClass}>
-                    Full name
-                    <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} required />
-                </label>
-                <label className={labelClass}>
-                    Email
-                    <input
-                        className={inputClass}
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                </label>
-                <label className={labelClass}>
-                    Phone
-                    <input className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} required />
-                </label>
-                <label className={labelClass}>
-                    Primary role (backend)
-                    <select
-                        className={inputClass}
-                        value={role}
-                        onChange={(e) => setRole(e.target.value)}
-                        disabled={!canEditRole}
-                    >
-                        {BACKEND_ROLES.map((r) => (
-                            <option key={r} value={r}>
-                                {r.replace(/_/g, ' ')}
-                            </option>
-                        ))}
-                    </select>
-                    {!canEditRole ? (
-                        <span className="mt-1 block text-xs text-slate-400">
-                            Only admins can change roles; you cannot change your own role here.
-                        </span>
-                    ) : null}
-                </label>
-
-                <button
-                    type="submit"
-                    disabled={updateMut.isPending}
-                    className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-                >
-                    {updateMut.isPending ? 'Saving…' : 'Save changes'}
-                </button>
-            </form>
+            <AdminUserEditForm
+                key={String(user.id)}
+                userId={String(user.id)}
+                user={user}
+                canEditRole={canEditRole}
+            />
 
             <p className="text-xs text-slate-400 dark:text-slate-500">
                 Status changes (enable / disable / suspend) are on the{' '}

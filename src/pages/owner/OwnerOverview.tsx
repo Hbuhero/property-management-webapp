@@ -21,7 +21,7 @@ const OwnerOverview = () => {
     const base = location.pathname.startsWith('/landlord') ? '/landlord' : '/owner';
 
     const propsQuery = useOwnerProperties({ page: 0, size: 100 });
-    const rows = propsQuery.data?.records ?? [];
+    const rows = useMemo(() => propsQuery.data?.records ?? [], [propsQuery.data]);
 
     const total = rows.length;
     const byStatus = useMemo(() => {

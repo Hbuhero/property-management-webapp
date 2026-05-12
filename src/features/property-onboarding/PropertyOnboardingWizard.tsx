@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, LayoutGrid, Layers, MapPin, Building2, Plus, Trash2, ImagePlus, Star } from 'lucide-react';
@@ -10,6 +10,7 @@ import {
 import { uploadListingImage } from '@/api/fileUploadApi';
 import { FloorUnitTypeSchema, MapUnitStatusSchema } from '@/lib/contracts/preVisualMapContracts';
 import { resolveFloorThumbnailUrl } from '@/lib/propertyMediaUrl';
+import { SUGGESTED_BUILDING_AMENITIES } from '@/lib/buildingAmenitySuggestions';
 import { showError, showSuccess } from '@/lib/toast';
 import { useCreateProperty } from '@/queries/property.queries';
 import {
@@ -188,6 +189,8 @@ export default function PropertyOnboardingWizard() {
     const [propertyTypeId, setPropertyTypeId] = useState<number | ''>('');
     const [galleryItems, setGalleryItems] = useState<LocalGalleryItem[]>([]);
     const [thumbnailClientId, setThumbnailClientId] = useState<string | null>(null);
+    const [buildingAmenities, setBuildingAmenities] = useState<string[]>([]);
+    const [buildingAmenityInput, setBuildingAmenityInput] = useState('');
 
     const createProp = useCreateProperty();
 
@@ -307,6 +310,7 @@ export default function PropertyOnboardingWizard() {
             region: regionId,
             district: districtId,
             propertyType: propertyTypeId,
+            ...(buildingAmenities.length > 0 ? { amenities: buildingAmenities } : {}),
             ...(galleryImages ? { galleryImages } : {}),
         };
         try {
@@ -345,7 +349,7 @@ export default function PropertyOnboardingWizard() {
 
     const handleSaveFloorUnits = async (floorId: number) => {
         if (!created) return;
-        const rows = unitRowsByFloor[floorId] ?? [emptyUnitRow()];
+        const rows = resolvedUnitRowsByFloor[floorId] ?? [emptyUnitRow()];
         const units = rowsToBulkUnits(rows);
         if (units.length === 0) {
             showError('Add at least one unit number before saving.');
@@ -365,22 +369,12 @@ export default function PropertyOnboardingWizard() {
     };
 
     const floors = floorsQuery.data ?? [];
-
-    useEffect(() => {
-        const list = floorsQuery.data;
-        if (!list?.length) return;
-        setUnitRowsByFloor((prev) => {
-            let changed = false;
-            const next = { ...prev };
-            for (const f of list) {
-                if (next[f.id] === undefined) {
-                    next[f.id] = [emptyUnitRow()];
-                    changed = true;
-                }
-            }
-            return changed ? next : prev;
-        });
-    }, [floorsQuery.data]);
+    const resolvedUnitRowsByFloor: Record<number, UnitFormRow[]> = { ...unitRowsByFloor };
+    for (const f of floors) {
+        if (resolvedUnitRowsByFloor[f.id] === undefined) {
+            resolvedUnitRowsByFloor[f.id] = [emptyUnitRow()];
+        }
+    }
 
     const listingBusy =
         regionsQuery.isPending ||
@@ -525,6 +519,71 @@ export default function PropertyOnboardingWizard() {
                             ))}
                         </select>
                     </label>
+
+                    <div className={labelClass}>
+                        <span>Building amenities</span>
+                        <p className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                            Shared facilities for the whole building (e.g. gym). Tenants see these on the public
+                            listing.
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {SUGGESTED_BUILDING_AMENITIES.map((label) => (
+                                <button
+                                    key={label}
+                                    type="button"
+                                    disabled={buildingAmenities.includes(label)}
+                                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-emerald-500/50 disabled:opacity-40 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200"
+                                    onClick={() =>
+                                        setBuildingAmenities((prev) =>
+                                            prev.includes(label) ? prev : [...prev, label],
+                                        )
+                                    }
+                                >
+                                    + {label}
+                                </button>
+                            ))}
+                        </div>
+                        {buildingAmenities.length > 0 ? (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                {buildingAmenities.map((a) => (
+                                    <span
+                                        key={a}
+                                        className="inline-flex items-center gap-1 rounded-full bg-emerald-600/15 px-3 py-1 text-xs font-medium text-emerald-800 dark:text-emerald-200"
+                                    >
+                                        {a}
+                                        <button
+                                            type="button"
+                                            className="text-emerald-700/80 hover:text-emerald-900 dark:text-emerald-300"
+                                            aria-label={`Remove ${a}`}
+                                            onClick={() =>
+                                                setBuildingAmenities((prev) => prev.filter((x) => x !== a))
+                                            }
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
+                        ) : null}
+                        <div className="mt-3 flex gap-2">
+                            <input
+                                className={`${inputClass} flex-1`}
+                                value={buildingAmenityInput}
+                                placeholder="Add custom (Enter)"
+                                onChange={(e) => setBuildingAmenityInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key !== 'Enter') return;
+                                    e.preventDefault();
+                                    const label = buildingAmenityInput.trim();
+                                    if (!label) return;
+                                    setBuildingAmenities((prev) =>
+                                        prev.includes(label) ? prev : [...prev, label],
+                                    );
+                                    setBuildingAmenityInput('');
+                                }}
+                            />
+                        </div>
+                    </div>
 
                     <div className={labelClass}>
                         <span>Photos</span>
@@ -704,7 +763,7 @@ export default function PropertyOnboardingWizard() {
                                         <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                                             Units on this floor
                                         </p>
-                                        {(unitRowsByFloor[floor.id] ?? [emptyUnitRow()]).map((row) => (
+                                        {(resolvedUnitRowsByFloor[floor.id] ?? [emptyUnitRow()]).map((row) => (
                                             <div
                                                 key={row.clientId}
                                                 className="rounded-xl border border-slate-100 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-950/40"
@@ -713,7 +772,7 @@ export default function PropertyOnboardingWizard() {
                                                     <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
                                                         Unit
                                                     </span>
-                                                    {(unitRowsByFloor[floor.id] ?? [emptyUnitRow()]).length >
+                                                    {(resolvedUnitRowsByFloor[floor.id] ?? [emptyUnitRow()]).length >
                                                         1 && (
                                                         <button
                                                             type="button"

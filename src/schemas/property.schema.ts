@@ -66,6 +66,9 @@ export const PropertyFloorSummarySchema = z.object({
     sortOrder: z.number().nullable().optional(),
     floorPlanImagePath: z.string().nullable().optional(),
     galleryImages: z.array(FloorGalleryImageSchema).optional(),
+    unitCount: z.number().int().nonnegative().optional().default(0),
+    availableUnitCount: z.number().int().nonnegative().optional().default(0),
+    occupiedUnitCount: z.number().int().nonnegative().optional().default(0),
 });
 
 export type PropertyFloorSummary = z.infer<typeof PropertyFloorSummarySchema>;

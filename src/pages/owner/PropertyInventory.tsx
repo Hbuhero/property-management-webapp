@@ -45,7 +45,7 @@ const PropertyInventory = () => {
 
     const listQuery = useOwnerProperties({ page: 0, size: 100 });
     const patchPropertyMut = usePatchProperty();
-    const rows = listQuery.data?.records ?? [];
+    const rows = useMemo(() => listQuery.data?.records ?? [], [listQuery.data]);
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
