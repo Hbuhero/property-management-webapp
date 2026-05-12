@@ -13,7 +13,6 @@ import {
     ShieldCheck,
     Phone,
     LayoutGrid,
-    ExternalLink,
     Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -277,8 +276,6 @@ const PropertyDetail = () => {
                                                 <li key={f.id}>
                                                     <Link
                                                         to={`/floors/${f.id}/map`}
-                                                        target="_blank"
-                                                        rel="noreferrer"
                                                         className="flex overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:border-emerald-500/40 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-emerald-500/30"
                                                     >
                                                         <div className="relative h-28 w-32 shrink-0 bg-slate-200 dark:bg-slate-700">
@@ -313,7 +310,7 @@ const PropertyDetail = () => {
                                                             </span>
                                                             <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                                                                 Open map
-                                                                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                                                                <ChevronRight className="h-3.5 w-3.5" aria-hidden />
                                                             </span>
                                                         </div>
                                                     </Link>
@@ -345,8 +342,6 @@ const PropertyDetail = () => {
                                 {floors[0] ? (
                                     <Link
                                         to={`/floors/${floors[0].id}/map`}
-                                        target="_blank"
-                                        rel="noreferrer"
                                         className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
                                     >
                                         <LayoutGrid className="h-5 w-5" aria-hidden />
