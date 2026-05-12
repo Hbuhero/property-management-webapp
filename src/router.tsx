@@ -196,6 +196,12 @@ const router = createBrowserRouter([
                                 }),
                             },
                             {
+                                path: 'properties/:propertyId/edit',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/PropertyEditPage')).default,
+                                }),
+                            },
+                            {
                                 path: 'visual-map',
                                 lazy: async () => ({
                                     Component: (await import('./pages/owner/VisualMapOwner')).default,
@@ -245,6 +251,12 @@ const router = createBrowserRouter([
                                 lazy: async () => ({
                                     Component: (await import('./features/property-onboarding/PropertyOnboardingWizard'))
                                         .default,
+                                }),
+                            },
+                            {
+                                path: 'properties/:propertyId/edit',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/PropertyEditPage')).default,
                                 }),
                             },
                             {

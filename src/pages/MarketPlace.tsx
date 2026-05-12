@@ -50,10 +50,24 @@ const trendingRegions = [
 ];
 
 function listingImageUrl(p: PropertySummary): string {
+    const paths = p.galleryImagePaths?.length
+        ? p.galleryImagePaths
+        : p.primaryGalleryImagePath != null
+          ? [p.primaryGalleryImagePath]
+          : [];
+    const first = paths.map((path) => resolvePropertyImageUrl(path)).find((u) => u != null && u.length > 0);
     return (
-        resolvePropertyImageUrl(p.primaryGalleryImagePath) ??
+        first ??
         `https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=800&seed=${p.id}`
     );
+}
+
+function listingGalleryUrls(p: PropertySummary): string[] {
+    const paths =
+        p.galleryImagePaths?.length ? p.galleryImagePaths : p.primaryGalleryImagePath ? [p.primaryGalleryImagePath] : [];
+    return paths
+        .map((path) => resolvePropertyImageUrl(path))
+        .filter((u): u is string => u != null && u.length > 0);
 }
 
 function statusBadgeClass(status: PropertySummary['status']): string {
@@ -249,30 +263,45 @@ const Marketplace = () => {
                     </p>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filtered.map((property, idx) => (
-                            <motion.div
-                                key={property.id}
-                                initial={{ opacity: 0, y: 16 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.04, duration: 0.3 }}
-                                className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-lg dark:hover:shadow-slate-900 transition-all duration-200"
-                            >
-                                <Link to={`/property/${property.id}`}>
-                                    <div className="relative h-48 overflow-hidden">
-                                        <img
-                                            src={listingImageUrl(property)}
-                                            alt=""
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                                        <span
-                                            className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${statusBadgeClass(property.status)}`}
-                                        >
-                                            {formatStatus(property.status)}
-                                        </span>
-                                    </div>
+                        {filtered.map((property, idx) => {
+                            const galleryUrls = listingGalleryUrls(property);
+                            const heroSrc = galleryUrls[0] ?? listingImageUrl(property);
+                            return (
+                                <motion.div
+                                    key={property.id}
+                                    initial={{ opacity: 0, y: 16 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.04, duration: 0.3 }}
+                                    className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-lg dark:hover:shadow-slate-900 transition-all duration-200"
+                                >
+                                    <Link to={`/property/${property.id}`}>
+                                        <div className="relative h-48 overflow-hidden">
+                                            <img
+                                                src={heroSrc}
+                                                alt=""
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                                            {galleryUrls.length > 1 && (
+                                                <div className="absolute bottom-0 left-0 right-0 flex gap-1 overflow-x-auto p-2 pt-6 bg-gradient-to-t from-black/60 to-transparent">
+                                                    {galleryUrls.slice(0, 6).map((url, gi) => (
+                                                        <img
+                                                            key={`${property.id}-g-${gi}`}
+                                                            src={url}
+                                                            alt=""
+                                                            className="h-11 w-11 shrink-0 rounded-lg border border-white/40 object-cover shadow-sm"
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <span
+                                                className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${statusBadgeClass(property.status)}`}
+                                            >
+                                                {formatStatus(property.status)}
+                                            </span>
+                                        </div>
 
-                                    <div className="p-4">
+                                        <div className="p-4">
                                         <h3 className="font-semibold text-slate-900 dark:text-white text-sm leading-snug group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-1">
                                             {property.title}
                                         </h3>
@@ -299,10 +328,11 @@ const Marketplace = () => {
                                                 View →
                                             </span>
                                         </div>
-                                    </div>
-                                </Link>
-                            </motion.div>
-                        ))}
+                                        </div>
+                                    </Link>
+                                </motion.div>
+                            );
+                        })}
                     </div>
                 )}
 

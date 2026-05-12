@@ -7,7 +7,6 @@ import {
     FileText,
     LayoutGrid,
     ShoppingBag,
-    PlusCircle,
 } from 'lucide-react';
 import { useAppSelector } from '@/hooks/useAppStore';
 
@@ -34,7 +33,6 @@ const OwnerLayout = () => {
     const navItems: NavItem[] = [
         { name: 'Overview', path: base, icon: BarChart3, match: 'exact' },
         { name: 'Properties', path: `${base}/properties`, icon: Building, match: 'prefix' },
-        { name: 'New listing', path: `${base}/properties/onboarding`, icon: PlusCircle, match: 'exact' },
         { name: 'Floor plans', path: `${base}/visual-map`, icon: LayoutGrid, match: 'prefix' },
         { name: 'Applications', path: `${base}/applications`, icon: FileText, match: 'exact' },
         { name: 'Finances', path: `${base}/finances`, icon: Wallet, match: 'exact' },

@@ -9,6 +9,7 @@ import {
     patchOwnerFloor,
     patchOwnerUnit,
 } from '@/api/propertyStructureApi';
+import { propertyKeys } from '@/queries/property.queries';
 import type {
     BulkFloorUnitsInput,
     FloorCreateInput,
@@ -49,6 +50,7 @@ export function useOwnerFloorUnits(
 
 function invalidateStructure(qc: QueryClient, propertyId: number | string, floorId?: number | string) {
     void qc.invalidateQueries({ queryKey: propertyStructureKeys.floors(propertyId) });
+    void qc.invalidateQueries({ queryKey: propertyKeys.all });
     if (floorId !== undefined) {
         void qc.invalidateQueries({
             queryKey: propertyStructureKeys.units(propertyId, floorId),

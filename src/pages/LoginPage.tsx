@@ -1,18 +1,20 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Building2 } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import { useLoginMutation } from '@/queries/auth.queries';
 import { showSuccess, showError } from '@/lib/toast';
 import { homePathForRole } from '@/lib/authRole';
 import { loginSchema } from '@/schemas/auth.schema';
 import type { UserRole } from '@/store/slices/authSlice';
-import FileUpload from '@/components/file-upload';
+import type { RootState } from '@/store';
 
 export default function LoginPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { isAuthenticated, user } = useSelector((s: RootState) => s.auth);
     const loginMutation = useLoginMutation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -42,6 +44,10 @@ export default function LoginPage() {
             showError(t('auth.loginError'));
         }
     };
+
+    if (isAuthenticated && user) {
+        return <Navigate to={homePathForRole(user.role)} replace />;
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col pt-24 pb-12">
@@ -140,8 +146,6 @@ export default function LoginPage() {
                         </p>
                     </div>
                 </motion.div>
-
-                <FileUpload />
             </div>
         </div>
     );

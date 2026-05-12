@@ -1,14 +1,18 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Building2, Eye, EyeOff, Lock, Mail, Phone, User, Users } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import { useRegisterMutation } from '@/queries/auth.queries';
 import { showError } from '@/lib/toast';
+import { homePathForRole } from '@/lib/authRole';
 import { registerSchema, type RegisterFormData, type SelfRegistrationRole } from '@/schemas/auth.schema';
+import type { RootState } from '@/store';
 
 export default function RegisterPage() {
     const { t } = useTranslation();
+    const { isAuthenticated, user } = useSelector((s: RootState) => s.auth);
     const registerMutation = useRegisterMutation();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -61,6 +65,10 @@ export default function RegisterPage() {
             showError(err instanceof Error ? err.message : t('auth.registerError'));
         }
     };
+
+    if (isAuthenticated && user) {
+        return <Navigate to={homePathForRole(user.role)} replace />;
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col pt-24 pb-12 px-4">

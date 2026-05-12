@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { FloorUnitTypeSchema, MapUnitStatusSchema } from '@/lib/contracts/preVisualMapContracts';
+import { FloorGalleryImageSchema } from '@/schemas/property.schema';
 
 export const FloorStructureSchema = z.object({
     id: z.number(),
@@ -7,6 +8,8 @@ export const FloorStructureSchema = z.object({
     label: z.string(),
     sortOrder: z.number().nullable().optional(),
     unitCount: z.number(),
+    floorPlanImagePath: z.string().nullable().optional(),
+    galleryImages: z.array(FloorGalleryImageSchema),
 });
 
 export const FloorUnitStructureSchema = z.object({
@@ -29,6 +32,14 @@ export const FloorCreateSchema = z.object({
 export const FloorPatchSchema = z.object({
     label: z.string().optional(),
     sortOrder: z.number().optional(),
+    galleryImages: z
+        .array(
+            z.object({
+                imagePath: z.string().min(1),
+                sortOrder: z.number().optional(),
+            }),
+        )
+        .optional(),
 });
 
 export const FloorUnitSeedSchema = z.object({

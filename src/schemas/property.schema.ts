@@ -23,6 +23,13 @@ export const PropertyGalleryImageSchema = z.object({
     sortOrder: z.number().nullable().optional(),
 });
 
+/** Floor-level gallery image (owner marketing photos per storey). */
+export const FloorGalleryImageSchema = z.object({
+    id: z.number(),
+    imagePath: z.string(),
+    sortOrder: z.number().nullable().optional(),
+});
+
 export const PropertyOwnershipDocumentSchema = z.object({
     id: z.number(),
     documentType: z.string(),
@@ -46,6 +53,7 @@ export const PropertySummarySchema = z.object({
     propertyTypeId: z.number().nullable().optional(),
     propertyTypeName: z.string().nullable().optional(),
     primaryGalleryImagePath: z.string().nullable().optional(),
+    galleryImagePaths: z.array(z.string()).optional(),
     uuid: z.string(),
     deleted: z.boolean().nullable().optional(),
     createdAt: z.string().nullable().optional(),
@@ -56,6 +64,8 @@ export const PropertyFloorSummarySchema = z.object({
     id: z.number(),
     label: z.string(),
     sortOrder: z.number().nullable().optional(),
+    floorPlanImagePath: z.string().nullable().optional(),
+    galleryImages: z.array(FloorGalleryImageSchema).optional(),
 });
 
 export type PropertyFloorSummary = z.infer<typeof PropertyFloorSummarySchema>;

@@ -1,13 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, LayoutGrid, Layers, MapPin, Building2, Plus, Trash2 } from 'lucide-react';
+import { ChevronRight, LayoutGrid, Layers, MapPin, Building2, Plus, Trash2, ImagePlus, Star } from 'lucide-react';
 import {
     fetchDistrictsByRegion,
     fetchPropertyTypesLookup,
     fetchRegionsLookup,
 } from '@/api/referenceDataApi';
+import { uploadListingImage } from '@/api/fileUploadApi';
 import { FloorUnitTypeSchema, MapUnitStatusSchema } from '@/lib/contracts/preVisualMapContracts';
+import { resolveFloorThumbnailUrl } from '@/lib/propertyMediaUrl';
 import { showError, showSuccess } from '@/lib/toast';
 import { useCreateProperty } from '@/queries/property.queries';
 import {
@@ -88,6 +90,31 @@ function formatUnitTypeLabel(value: string): string {
     return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+const MAX_LISTING_GALLERY = 12;
+
+type LocalGalleryItem = {
+    clientId: string;
+    file?: File;
+    previewUrl: string;
+    serverPath?: string;
+    uploading?: boolean;
+    error?: string;
+};
+
+function buildCreateGalleryPayload(
+    items: LocalGalleryItem[],
+    thumbId: string | null,
+): NonNullable<PropertyCreateInput['galleryImages']> | undefined {
+    const ready = items.filter((i) => i.serverPath);
+    if (!ready.length) return undefined;
+    const thumb = thumbId ?? ready[0].clientId;
+    const ordered = [
+        ...ready.filter((i) => i.clientId === thumb),
+        ...ready.filter((i) => i.clientId !== thumb),
+    ];
+    return ordered.map((item, idx) => ({ imagePath: item.serverPath!, sortOrder: idx }));
+}
+
 const STEPS = ['Listing', 'Floors & units', 'Floor plans'] as const;
 
 function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
@@ -159,6 +186,8 @@ export default function PropertyOnboardingWizard() {
     const [addressLine, setAddressLine] = useState('');
     const [locationText, setLocationText] = useState('');
     const [propertyTypeId, setPropertyTypeId] = useState<number | ''>('');
+    const [galleryItems, setGalleryItems] = useState<LocalGalleryItem[]>([]);
+    const [thumbnailClientId, setThumbnailClientId] = useState<string | null>(null);
 
     const createProp = useCreateProperty();
 
@@ -167,6 +196,77 @@ export default function PropertyOnboardingWizard() {
 
     const createFloorMut = useCreateOwnerFloor();
     const bulkUnitsMut = useBulkCreateOwnerUnits();
+
+    const uploadGalleryBatch = async (batch: LocalGalleryItem[]) => {
+        for (const item of batch) {
+            try {
+                const path = await uploadListingImage(item.file!);
+                setGalleryItems((prev) =>
+                    prev.map((row) =>
+                        row.clientId === item.clientId
+                            ? { ...row, serverPath: path, uploading: false, error: undefined }
+                            : row,
+                    ),
+                );
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : 'Upload failed';
+                setGalleryItems((prev) =>
+                    prev.map((row) =>
+                        row.clientId === item.clientId ? { ...row, uploading: false, error: msg } : row,
+                    ),
+                );
+                showError(msg);
+            }
+        }
+    };
+
+    const handleGalleryFiles = (fileList: FileList | null) => {
+        if (!fileList?.length) return;
+        const files = Array.from(fileList).filter((file) => {
+            const ok =
+                /^image\/(jpeg|jpg|png|svg\+xml)$/i.test(file.type) ||
+                /\.(jpe?g|png|svg)$/i.test(file.name);
+            if (!ok) showError(`${file.name}: use JPG, PNG, or SVG`);
+            return ok;
+        });
+        if (!files.length) return;
+
+        setGalleryItems((prev) => {
+            const room = MAX_LISTING_GALLERY - prev.length;
+            if (room <= 0) {
+                showError(`Maximum ${MAX_LISTING_GALLERY} images`);
+                return prev;
+            }
+            const slice = files.slice(0, room);
+            if (files.length > room) {
+                showError(`Only ${room} more image(s) added (limit ${MAX_LISTING_GALLERY})`);
+            }
+            const additions: LocalGalleryItem[] = slice.map((file) => ({
+                clientId: newClientId(),
+                file,
+                previewUrl: URL.createObjectURL(file),
+                uploading: true,
+            }));
+            if (additions.length) {
+                setThumbnailClientId((tid) => tid ?? additions[0].clientId);
+                void uploadGalleryBatch(additions);
+            }
+            return [...prev, ...additions];
+        });
+    };
+
+    const removeGalleryItem = (clientId: string) => {
+        setGalleryItems((prev) => {
+            const victim = prev.find((i) => i.clientId === clientId);
+            if (victim?.previewUrl.startsWith('blob:')) URL.revokeObjectURL(victim.previewUrl);
+            const next = prev.filter((i) => i.clientId !== clientId);
+            setThumbnailClientId((thumb) => {
+                if (thumb !== clientId) return thumb;
+                return next[0]?.clientId ?? null;
+            });
+            return next;
+        });
+    };
 
     const [newFloorLabel, setNewFloorLabel] = useState('');
     const [newFloorSort, setNewFloorSort] = useState('');
@@ -186,6 +286,19 @@ export default function PropertyOnboardingWizard() {
             showError('Choose a property type.');
             return;
         }
+        if (galleryItems.some((i) => i.uploading)) {
+            showError('Wait for photo uploads to finish.');
+            return;
+        }
+        if (galleryItems.some((i) => i.error && !i.serverPath)) {
+            showError('Remove failed uploads before continuing.');
+            return;
+        }
+        if (galleryItems.some((i) => i.file && !i.serverPath && !i.error)) {
+            showError('Photos are still processing — try again in a moment.');
+            return;
+        }
+        const galleryImages = buildCreateGalleryPayload(galleryItems, thumbnailClientId);
         const body: PropertyCreateInput = {
             title: title.trim(),
             description: description.trim(),
@@ -194,6 +307,7 @@ export default function PropertyOnboardingWizard() {
             region: regionId,
             district: districtId,
             propertyType: propertyTypeId,
+            ...(galleryImages ? { galleryImages } : {}),
         };
         try {
             const detail = await createProp.mutateAsync(body);
@@ -271,7 +385,8 @@ export default function PropertyOnboardingWizard() {
     const listingBusy =
         regionsQuery.isPending ||
         typesQuery.isPending ||
-        (typeof regionId === 'number' && districtsQuery.isPending);
+        (typeof regionId === 'number' && districtsQuery.isPending) ||
+        galleryItems.some((i) => i.uploading);
 
     const headerTitle = (
         <div className="flex items-start gap-3">
@@ -410,6 +525,89 @@ export default function PropertyOnboardingWizard() {
                             ))}
                         </select>
                     </label>
+
+                    <div className={labelClass}>
+                        <span>Photos</span>
+                        <p className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                            Upload one or more images (JPG, PNG, SVG). Choose which appears as the listing thumbnail
+                            in Marketplace and inventory.
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800">
+                                <ImagePlus className="h-4 w-4 text-emerald-600" aria-hidden />
+                                Add images
+                                <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/svg+xml,.jpg,.jpeg,.png,.svg"
+                                    multiple
+                                    className="sr-only"
+                                    onChange={(e) => {
+                                        handleGalleryFiles(e.target.files);
+                                        e.target.value = '';
+                                    }}
+                                />
+                            </label>
+                            <span className="text-[11px] text-slate-400">
+                                {galleryItems.length}/{MAX_LISTING_GALLERY}
+                            </span>
+                        </div>
+                        {galleryItems.length > 0 && (
+                            <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                {galleryItems.map((item) => (
+                                    <li
+                                        key={item.clientId}
+                                        className={`relative overflow-hidden rounded-xl border bg-slate-50 dark:bg-slate-950 ${
+                                            thumbnailClientId === item.clientId
+                                                ? 'border-emerald-500 ring-2 ring-emerald-500/30'
+                                                : 'border-slate-200 dark:border-slate-700'
+                                        }`}
+                                    >
+                                        <div className="relative aspect-4/3">
+                                            <img
+                                                src={item.previewUrl}
+                                                alt=""
+                                                className="h-full w-full object-cover"
+                                            />
+                                            {item.uploading && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-medium text-white">
+                                                    Uploading…
+                                                </div>
+                                            )}
+                                            {item.error && (
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-950/80 p-2 text-center text-[10px] font-medium text-red-100">
+                                                    {item.error}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-wrap gap-1 border-t border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900">
+                                            <button
+                                                type="button"
+                                                disabled={!item.serverPath}
+                                                title={
+                                                    item.serverPath
+                                                        ? 'Use as thumbnail'
+                                                        : 'Wait for upload'
+                                                }
+                                                className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600/10 px-2 py-1.5 text-[10px] font-semibold text-emerald-800 hover:bg-emerald-600/20 disabled:cursor-not-allowed disabled:opacity-40 dark:text-emerald-300"
+                                                onClick={() => setThumbnailClientId(item.clientId)}
+                                            >
+                                                <Star className="h-3 w-3 shrink-0" aria-hidden />
+                                                Thumbnail
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="inline-flex items-center justify-center rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
+                                                aria-label="Remove image"
+                                                onClick={() => removeGalleryItem(item.clientId)}
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            </button>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
 
                     <button
                         type="submit"
@@ -880,35 +1078,54 @@ export default function PropertyOnboardingWizard() {
                         </p>
                     ) : (
                         <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-                            {floors.map((floor) => (
-                                <li
-                                    key={floor.id}
-                                    className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0"
-                                >
-                                    <div>
-                                        <p className="font-medium text-slate-900 dark:text-white">
-                                            {floor.label}
-                                        </p>
-                                        <p className="text-xs text-slate-500">Floor id {floor.id}</p>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        <Link
-                                            to={`${base}/visual-map?propertyId=${created.id}&floorId=${floor.id}`}
-                                            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
-                                        >
-                                            Edit overlays
-                                        </Link>
-                                        <Link
-                                            to={`/floors/${floor.id}/map`}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
-                                        >
-                                            Public map
-                                        </Link>
-                                    </div>
-                                </li>
-                            ))}
+                            {floors.map((floor) => {
+                                const thumb = resolveFloorThumbnailUrl(
+                                    floor.floorPlanImagePath,
+                                    floor.galleryImages,
+                                );
+                                return (
+                                    <li
+                                        key={floor.id}
+                                        className="flex flex-wrap items-center gap-4 py-4 first:pt-0"
+                                    >
+                                        <div className="h-20 w-28 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                                            {thumb ? (
+                                                <img
+                                                    src={thumb}
+                                                    alt=""
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex h-full items-center justify-center px-1 text-center text-[10px] text-slate-500 dark:text-slate-400">
+                                                    Add plan in editor
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-medium text-slate-900 dark:text-white">
+                                                {floor.label}
+                                            </p>
+                                            <p className="text-xs text-slate-500">Floor id {floor.id}</p>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            <Link
+                                                to={`${base}/visual-map?propertyId=${created.id}&floorId=${floor.id}`}
+                                                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                                            >
+                                                Edit overlays
+                                            </Link>
+                                            <Link
+                                                to={`/floors/${floor.id}/map`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                                            >
+                                                Public map
+                                            </Link>
+                                        </div>
+                                    </li>
+                                );
+                            })}
                         </ul>
                     )}
 

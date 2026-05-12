@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ExternalLink, LayoutGrid, PlusCircle, Search } from 'lucide-react';
+import { ExternalLink, LayoutGrid, Pencil, PlusCircle, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { resolvePropertyImageUrl } from '@/lib/propertyMediaUrl';
 import { showError, showSuccess } from '@/lib/toast';
@@ -177,6 +177,13 @@ const PropertyInventory = () => {
                                             </td>
                                             <td className="px-5 py-4">
                                                 <div className="flex flex-wrap items-center gap-3">
+                                                    <Link
+                                                        to={`${base}/properties/${p.id}/edit`}
+                                                        className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400"
+                                                    >
+                                                        <Pencil className="h-3 w-3 shrink-0" aria-hidden />
+                                                        Edit
+                                                    </Link>
                                                     <Link
                                                         to={`${base}/visual-map?propertyId=${p.id}`}
                                                         className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"

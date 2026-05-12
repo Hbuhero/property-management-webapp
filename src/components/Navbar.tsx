@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Building2, Menu, X } from 'lucide-react';
+import { Building2, Menu, X, UserRound } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSelector } from 'react-redux';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import type { RootState } from '@/store';
+import { homePathForRole } from '@/lib/authRole';
 
 // ── Nav link definitions ──────────────────────────────────────────────────────
 interface NavLink {
@@ -31,6 +34,8 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useSelector((s: RootState) => s.auth);
+  const dashboardHref = user ? homePathForRole(user.role) : '/';
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -118,19 +123,31 @@ const Navbar = () => {
 
             <div className="w-px h-5 bg-slate-300 dark:bg-slate-700 mx-1" />
 
-            <Link
-              to="/register"
-              className="hidden sm:inline-flex text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-2 rounded-full transition-colors"
-            >
-              {t('auth.registerNav')}
-            </Link>
+            {isAuthenticated && user ? (
+              <Link
+                to={dashboardHref}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:border-emerald-500/40 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-100 dark:hover:border-emerald-500/30 dark:hover:text-emerald-400"
+              >
+                <UserRound className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+                <span className="max-w-[10rem] truncate">{user.name?.trim() || user.email}</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/register"
+                  className="hidden sm:inline-flex text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-2 rounded-full transition-colors"
+                >
+                  {t('auth.registerNav')}
+                </Link>
 
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-1.5 bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2 rounded-full transition-all shadow-sm hover:shadow-emerald-500/25"
-            >
-              {t('auth.signInNav')}
-            </Link>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-1.5 bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2 rounded-full transition-all shadow-sm hover:shadow-emerald-500/25"
+                >
+                  {t('auth.signInNav')}
+                </Link>
+              </>
+            )}
           </div>
 
           {/* MOBILE — Hamburger */}
@@ -184,20 +201,33 @@ const Navbar = () => {
               )}
 
               <div className="pt-2 pb-1 px-1 space-y-2">
-                <Link
-                  to="/register"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full border border-emerald-600 text-emerald-700 dark:text-emerald-400 font-semibold px-4 py-3 rounded-2xl transition-colors"
-                >
-                  {t('auth.registerNav')}
-                </Link>
-                <Link
-                  to="/login"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-700 text-white font-semibold px-4 py-3.5 rounded-2xl transition-colors shadow-sm"
-                >
-                  {t('auth.signInNav')}
-                </Link>
+                {isAuthenticated && user ? (
+                  <Link
+                    to={dashboardHref}
+                    onClick={() => setIsOpen(false)}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                  >
+                    <UserRound className="h-4 w-4 shrink-0" aria-hidden />
+                    {t('nav.dashboard')}
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      to="/register"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center justify-center gap-2 w-full border border-emerald-600 text-emerald-700 dark:text-emerald-400 font-semibold px-4 py-3 rounded-2xl transition-colors"
+                    >
+                      {t('auth.registerNav')}
+                    </Link>
+                    <Link
+                      to="/login"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center justify-center gap-2 w-full bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-700 text-white font-semibold px-4 py-3.5 rounded-2xl transition-colors shadow-sm"
+                    >
+                      {t('auth.signInNav')}
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
