@@ -54,3 +54,34 @@ export async function toggleUnitStatus(
         body: JSON.stringify(body),
     });
 }
+
+/** Property owner APIs — same payloads; requires JWT with landlord/owner session. */
+export async function uploadFloorPlanAsOwner(
+    floorId: number | string,
+    formData: FormData,
+): Promise<ApiMessage> {
+    return apiJson<ApiMessage>(VisualMapApi.ownerFloorPlan(floorId), {
+        method: 'POST',
+        body: formData,
+    });
+}
+
+export async function saveUnitOverlayAsOwner(
+    unitId: number | string,
+    overlay: UnitOverlayPutBody,
+): Promise<ApiMessage> {
+    return apiJson<ApiMessage>(VisualMapApi.ownerUnitOverlay(unitId), {
+        method: 'PUT',
+        body: JSON.stringify(overlay),
+    });
+}
+
+export async function toggleUnitStatusAsOwner(
+    unitId: number | string,
+    body: UnitStatusPatchBody,
+): Promise<ApiMessage> {
+    return apiJson<ApiMessage>(VisualMapApi.ownerUnitStatus(unitId), {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+    });
+}

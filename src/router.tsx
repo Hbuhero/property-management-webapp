@@ -95,6 +95,18 @@ const router = createBrowserRouter([
                                 }),
                             },
                             {
+                                path: 'properties',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/admin/AdminProperties')).default,
+                                }),
+                            },
+                            {
+                                path: 'users/:userId',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/admin/AdminUserDetail')).default,
+                                }),
+                            },
+                            {
                                 path: 'users',
                                 lazy: async () => ({
                                     Component: (await import('./pages/admin/UserCentral')).default,
@@ -104,12 +116,6 @@ const router = createBrowserRouter([
                                 path: 'security',
                                 lazy: async () => ({
                                     Component: (await import('./pages/admin/SecurityLogs')).default,
-                                }),
-                            },
-                            {
-                                path: 'visual-map',
-                                lazy: async () => ({
-                                    Component: (await import('./pages/admin/VisualMapAdmin')).default,
                                 }),
                             },
                         ],
@@ -183,6 +189,19 @@ const router = createBrowserRouter([
                                 }),
                             },
                             {
+                                path: 'properties/onboarding',
+                                lazy: async () => ({
+                                    Component: (await import('./features/property-onboarding/PropertyOnboardingWizard'))
+                                        .default,
+                                }),
+                            },
+                            {
+                                path: 'visual-map',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/VisualMapOwner')).default,
+                                }),
+                            },
+                            {
                                 path: 'applications',
                                 lazy: async () => ({
                                     Component: (await import('./pages/owner/ApplicationInbox')).default,
@@ -219,6 +238,19 @@ const router = createBrowserRouter([
                                 path: 'properties',
                                 lazy: async () => ({
                                     Component: (await import('./pages/owner/PropertyInventory')).default,
+                                }),
+                            },
+                            {
+                                path: 'properties/onboarding',
+                                lazy: async () => ({
+                                    Component: (await import('./features/property-onboarding/PropertyOnboardingWizard'))
+                                        .default,
+                                }),
+                            },
+                            {
+                                path: 'visual-map',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/VisualMapOwner')).default,
                                 }),
                             },
                             {

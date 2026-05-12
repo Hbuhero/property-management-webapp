@@ -81,6 +81,23 @@ export const MapUnitStatusSchema = z.enum(['AVAILABLE', 'OCCUPIED']);
 
 export type MapUnitStatus = z.infer<typeof MapUnitStatusSchema>;
 
+/** Matches backend {@code FloorUnitType} enum names on map & structure APIs. */
+export const FloorUnitTypeSchema = z.enum([
+    'STUDIO',
+    'ONE_BEDROOM',
+    'TWO_BEDROOM',
+    'THREE_BEDROOM',
+    'FOUR_PLUS_BEDROOM',
+    'OPEN_PLAN',
+    'DUPLEX',
+    'COMMERCIAL',
+    'OFFICE',
+    'RETAIL',
+    'OTHER',
+]);
+
+export type FloorUnitTypeName = z.infer<typeof FloorUnitTypeSchema>;
+
 /** One unit row from {@code GET /api/v1/floors/{floorId}/map}. */
 export const UnitMapUnitSchema = z.object({
     unitId: z.number(),
@@ -89,6 +106,8 @@ export const UnitMapUnitSchema = z.object({
     sizeM2: z.number().nullable().optional(),
     monthlyRent: z.number().nullable().optional(),
     status: MapUnitStatusSchema,
+    /** Nullable when unset or legacy rows. Unknown strings accepted if backend adds variants first. */
+    unitType: z.union([FloorUnitTypeSchema, z.string()]).nullable().optional(),
     xPct: z.number(),
     yPct: z.number(),
     wPct: z.number(),
@@ -123,13 +142,25 @@ export const UnitStatusPatchBodySchema = z.object({
 
 export type UnitStatusPatchBody = z.infer<typeof UnitStatusPatchBodySchema>;
 
-/** Visual Map (V2) — public + admin routes under {@link API_V1_PREFIX}. */
+/** Visual Map (V2) — public + owner + admin routes under {@link API_V1_PREFIX}. */
 export const VisualMapApi = {
     /** {@code GET /api/v1/floors/{floorId}/map} — public, unauthenticated read. */
     floorMap: (floorId: number | string) =>
         `${API_V1_PREFIX}/floors/${encodeURIComponent(String(floorId))}/map`,
 
-    /** {@code POST /api/v1/admin/floors/{floorId}/plan} — multipart floor plan upload. */
+    /** Property owner (JWT {@code LAND_LORD}): multipart floor plan upload for their floor. */
+    ownerFloorPlan: (floorId: number | string) =>
+        `${API_V1_PREFIX}/owner/floors/${encodeURIComponent(String(floorId))}/plan`,
+
+    /** Owner: overlay bounds (%). */
+    ownerUnitOverlay: (unitId: number | string) =>
+        `${API_V1_PREFIX}/owner/floors/units/${encodeURIComponent(String(unitId))}/overlay`,
+
+    /** Owner: unit status. */
+    ownerUnitStatus: (unitId: number | string) =>
+        `${API_V1_PREFIX}/owner/floors/units/${encodeURIComponent(String(unitId))}/status`,
+
+    /** {@code POST /api/v1/admin/floors/{floorId}/plan} — multipart floor plan upload (staff). */
     adminFloorPlan: (floorId: number | string) =>
         `${API_V1_PREFIX}/admin/floors/${encodeURIComponent(String(floorId))}/plan`,
 

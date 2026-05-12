@@ -1,16 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ExternalLink, LayoutGrid, Upload } from 'lucide-react';
 import { OverlayEditor } from '@/components/visual-map/OverlayEditor';
 import { resolveFloorPlanImageUrl } from '@/components/visual-map/resolveFloorPlanUrl';
 import {
     useFloorMap,
-    useSaveOverlay,
-    useToggleUnitStatus,
-    useUploadFloorPlan,
+    useSaveOverlayOwner,
+    useToggleUnitStatusOwner,
+    useUploadFloorPlanOwner,
 } from '@/hooks/useFloorMap';
 import { showError, showSuccess } from '@/lib/toast';
 import type { UnitOverlayPutBody } from '@/lib/contracts/preVisualMapContracts';
+import { useOwnerFloors } from '@/queries/propertyStructure.queries';
 
 function readImageDimensions(file: File): Promise<{ w: number; h: number }> {
     return new Promise((resolve, reject) => {
@@ -36,9 +37,9 @@ function VisualMapFloorEditor({ floorId }: VisualMapFloorEditorProps) {
     const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
 
     const { data, isPending, isError, error, refetch } = useFloorMap(floorId);
-    const saveOverlay = useSaveOverlay(floorId);
-    const toggleStatus = useToggleUnitStatus(floorId);
-    const uploadPlan = useUploadFloorPlan(floorId);
+    const saveOverlay = useSaveOverlayOwner(floorId);
+    const toggleStatus = useToggleUnitStatusOwner(floorId);
+    const uploadPlan = useUploadFloorPlanOwner(floorId);
 
     const imageSrc = useMemo(
         () => (data ? resolveFloorPlanImageUrl(data.imageUrl) : null),
@@ -124,7 +125,8 @@ function VisualMapFloorEditor({ floorId }: VisualMapFloorEditorProps) {
             <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <h3 className="text-base font-semibold text-slate-900 dark:text-white">Floor plan image</h3>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    PNG or JPEG. Replaces any existing plan for this floor.
+                    Upload the plan for this floor of your property (PNG, JPEG, or WebP). This is how tenants
+                    see units on the public map. Replacing the image removes the previous file.
                 </p>
                 <label className="mt-4 flex cursor-pointer flex-col items-start gap-2">
                     <span className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-50">
@@ -248,15 +250,54 @@ function VisualMapFloorEditor({ floorId }: VisualMapFloorEditorProps) {
     );
 }
 
-export default function VisualMapAdmin() {
+function parsePositiveIntParam(raw: string | null): number | null {
+    if (!raw || !/^\d+$/.test(raw)) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+export default function VisualMapOwner() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const initial = searchParams.get('floorId');
-    const [floorInput, setFloorInput] = useState(
-        initial && /^\d+$/.test(initial) ? initial : '',
-    );
-    const [loadedFloorId, setLoadedFloorId] = useState<string | null>(
-        initial && /^\d+$/.test(initial) ? initial : null,
-    );
+    const propertyIdParamRaw = searchParams.get('propertyId');
+    const propertyIdNum = parsePositiveIntParam(propertyIdParamRaw);
+    const propertyIdInvalid =
+        propertyIdParamRaw != null && propertyIdParamRaw !== '' && propertyIdNum == null;
+
+    const floorIdRaw = searchParams.get('floorId');
+    const validFloorFromUrl = floorIdRaw && /^\d+$/.test(floorIdRaw) ? floorIdRaw : null;
+
+    const floorsQuery = useOwnerFloors(propertyIdNum);
+
+    const [floorInput, setFloorInput] = useState(() => validFloorFromUrl ?? '');
+    const [loadedFloorId, setLoadedFloorId] = useState<string | null>(() => validFloorFromUrl);
+
+    useEffect(() => {
+        if (validFloorFromUrl) {
+            setFloorInput(validFloorFromUrl);
+            setLoadedFloorId(validFloorFromUrl);
+        }
+    }, [validFloorFromUrl]);
+
+    const patchQuery = (updates: Record<string, string | undefined>) => {
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            for (const [k, v] of Object.entries(updates)) {
+                if (v === undefined || v === '') next.delete(k);
+                else next.set(k, v);
+            }
+            return next;
+        });
+    };
+
+    const commitFloorId = (trimmed: string) => {
+        setLoadedFloorId(trimmed);
+        setFloorInput(trimmed);
+        if (propertyIdNum != null) {
+            patchQuery({ propertyId: String(propertyIdNum), floorId: trimmed });
+        } else {
+            patchQuery({ floorId: trimmed, propertyId: undefined });
+        }
+    };
 
     const loadFloor = () => {
         const trimmed = floorInput.trim();
@@ -264,9 +305,26 @@ export default function VisualMapAdmin() {
             showError('Enter a numeric floor id');
             return;
         }
-        setLoadedFloorId(trimmed);
-        setSearchParams({ floorId: trimmed });
+        commitFloorId(trimmed);
     };
+
+    const handleFloorPickerChange = (value: string) => {
+        if (!value) {
+            setLoadedFloorId(null);
+            setFloorInput('');
+            if (propertyIdNum != null) {
+                patchQuery({ propertyId: String(propertyIdNum), floorId: undefined });
+            } else {
+                patchQuery({ floorId: undefined });
+            }
+            return;
+        }
+        commitFloorId(value);
+    };
+
+    const floors = floorsQuery.data ?? [];
+    const pickerValue =
+        loadedFloorId && floors.some((f) => String(f.id) === loadedFloorId) ? loadedFloorId : '';
 
     return (
         <div className="mx-auto max-w-5xl space-y-8">
@@ -276,23 +334,69 @@ export default function VisualMapAdmin() {
                         <LayoutGrid className="h-5 w-5" aria-hidden />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Visual map</h1>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Floor plans & units</h1>
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                            Floor plans, overlays, and unit status (admin only).
+                            Register how your building appears on the map: upload each floor plan, draw unit areas,
+                            and set availability. This is part of listing your property and apartments.
                         </p>
                     </div>
                 </div>
             </div>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white">Load floor</h2>
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white">Which floor?</h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Enter a floor id from your database (same id used in public URLs{' '}
-                    <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">/floors/…/map</code>).
+                    Pick a floor from your listing when you open this page from onboarding, or enter a floor id (same id
+                    used in{' '}
+                    <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">/floors/…/map</code>). You can only
+                    edit floors you own.
                 </p>
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+
+                {propertyIdInvalid ? (
+                    <p className="mt-4 text-sm text-amber-800 dark:text-amber-200" role="alert">
+                        The link contains an invalid property id. Remove <code className="mx-0.5 rounded bg-slate-100 px-1 dark:bg-slate-800">propertyId</code> from the URL or fix the value.
+                    </p>
+                ) : null}
+
+                {propertyIdNum != null ? (
+                    <div className="mt-4 space-y-2">
+                        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">
+                            Floor for property #{propertyIdNum}
+                            {floorsQuery.isPending ? (
+                                <span className="text-xs font-normal text-slate-500">Loading floors…</span>
+                            ) : null}
+                            {floorsQuery.isError ? (
+                                <span className="text-xs font-normal text-red-600 dark:text-red-400">
+                                    {floorsQuery.error instanceof Error
+                                        ? floorsQuery.error.message
+                                        : 'Could not load floors'}
+                                </span>
+                            ) : null}
+                            <select
+                                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                value={pickerValue}
+                                onChange={(e) => handleFloorPickerChange(e.target.value)}
+                                disabled={floorsQuery.isPending || floors.length === 0}
+                            >
+                                <option value="">
+                                    {floors.length === 0 && !floorsQuery.isPending
+                                        ? 'No floors yet — add floors in onboarding'
+                                        : 'Choose a floor…'}
+                                </option>
+                                {floors.map((f) => (
+                                    <option key={f.id} value={String(f.id)}>
+                                        {f.label}
+                                        {f.sortOrder != null ? ` (order ${f.sortOrder})` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    </div>
+                ) : null}
+
+                <div className={`flex flex-col gap-3 sm:flex-row sm:items-end ${propertyIdNum != null ? 'mt-6 border-t border-slate-100 pt-6 dark:border-slate-800' : 'mt-4'}`}>
                     <label className="flex flex-1 flex-col gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">
-                        Floor id
+                        {propertyIdNum != null ? 'Or enter floor id' : 'Floor id'}
                         <input
                             type="text"
                             inputMode="numeric"
@@ -300,7 +404,7 @@ export default function VisualMapAdmin() {
                             value={floorInput}
                             onChange={(e) => setFloorInput(e.target.value)}
                             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                            placeholder="e.g. 1"
+                            placeholder="e.g. 12"
                         />
                     </label>
                     <button
@@ -317,8 +421,9 @@ export default function VisualMapAdmin() {
                 <VisualMapFloorEditor key={loadedFloorId} floorId={loadedFloorId} />
             ) : (
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Enter a floor id and click <strong className="text-slate-700 dark:text-slate-300">Load floor</strong>{' '}
-                    to manage uploads and overlays.
+                    Choose a floor from the list or enter an id and click{' '}
+                    <strong className="text-slate-700 dark:text-slate-300">Load floor</strong> to manage uploads and
+                    overlays.
                 </p>
             )}
         </div>

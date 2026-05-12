@@ -1,11 +1,6 @@
 ---
 name: Pre Visual Map prerequisites
 overview: Implement the required foundation plans (Feature 0/1/9) so the Visual Property Map feature can be built safely with real auth, RBAC, API client wiring, and clean configuration.
-dependencies:
-  - /home/lynx/Desktop/property-management-webapp/.cursor/.plans/feature0-crosscutting.md
-  - /home/lynx/Desktop/property-management-webapp/.cursor/.plans/feature1.md
-  - /home/lynx/Desktop/property-management-webapp/.cursor/.plans/feature9.md
-scope_note: Focus only on prerequisites needed by Visual Map (admin uploads + admin-only APIs + public read endpoint). Keep changes modular and avoid coupling to unrelated features (payments/maintenance/etc).
 todos:
   - id: prereq-00-freeze-contracts
     content: Define and lock the minimal API contracts needed by Visual Map (auth token shape, role claim, and Visual Map endpoints) to prevent rework across FE/BE.
@@ -25,6 +20,7 @@ todos:
   - id: prereq-05-frontend-rbac-guards
     content: Add frontend role-based route guard(s) and apply them to admin routes to avoid exposing admin tooling to non-admin users.
     status: completed
+isProject: false
 ---
 
 ## Context (what we must enable before Visual Map)
@@ -56,11 +52,13 @@ Visual Map V2 requires:
 ### 1) Backend security enforcement (Feature 1 + Feature 9 prerequisite slice)
 
 Backend files involved:
+
 - `property-management`: `/home/lynx/Desktop/property-management/src/main/java/dev/hud/PropertyManagementSystem/config/AppSecurityConfig.java`
 - `property-management`: method security config class to add `@EnableMethodSecurity`
 - `property-management`: `/home/lynx/Desktop/property-management/src/main/java/dev/hud/PropertyManagementSystem/models/Role.java`
 
 Todos:
+
 - Tighten `SecurityFilterChain`:
   - Permit only `/api/v1/auth/**` and swagger routes anonymously.
   - Require authentication for the rest (do **not** keep `anyRequest().permitAll()`).
@@ -76,9 +74,11 @@ Todos:
 ### 2) Backend config hygiene (Feature 0 prerequisite slice)
 
 Backend file involved:
+
 - `/home/lynx/Desktop/property-management/src/main/resources/example.application.properties`
 
 Todos:
+
 - Remove/replace any real secrets with placeholders (JWT secret, email password).
 - Move secrets to environment variables (document required keys).
 - Keep example config for local dev but make it non-sensitive.
@@ -86,9 +86,11 @@ Todos:
 ### 3) Backend file upload readiness (needed for floor plan images)
 
 Backend file involved:
+
 - `/home/lynx/Desktop/property-management/src/main/java/dev/hud/PropertyManagementSystem/controllers/FileController.java`
 
 Todos:
+
 - Fix multipart upload mapping so the route exists as intended (currently uses `@PostMapping(name=...)`).
 - Decide storage strategy for Visual Map images:
   - **Option A (recommended)**: dedicated `FloorPlanStorageService` under Visual Map module (clean separation).
@@ -99,10 +101,12 @@ Todos:
 ### 4) Frontend shared API client (Feature 1 prerequisite slice)
 
 Webapp files involved (current state shows placeholders):
+
 - `/home/lynx/Desktop/property-management-webapp/src/queries/auth.queries.ts` (demo login)
 - `/home/lynx/Desktop/property-management-webapp/src/store/slices/authSlice.ts`
 
 Todos:
+
 - Add `VITE_API_BASE_URL` and a shared API client module (`src/lib/apiClient.ts`):
   - baseURL from env
   - attach `Authorization: Bearer <token>`
@@ -114,10 +118,12 @@ Todos:
 ### 5) Frontend RBAC guards (Feature 9 prerequisite slice)
 
 Webapp files involved:
+
 - `/home/lynx/Desktop/property-management-webapp/src/helper/require-auth.tsx` (auth-only guard)
 - `/home/lynx/Desktop/property-management-webapp/src/router.tsx` (routes)
 
 Todos:
+
 - Implement `RequireRole` guard (allowedRoles array).
 - Apply to admin routes:
   - `/admin/**` should require `ADMIN` (and optionally `SUPER_ADMIN`).
@@ -129,4 +135,3 @@ Todos:
 - Backend blocks non-admin access to `/api/v1/admin/**` with 403.
 - Webapp admin routes are role-guarded (UX), but backend remains source of truth.
 - File upload pathing is solved for floor plan images (dedicated service or fixed reuse).
-

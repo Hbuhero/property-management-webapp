@@ -2,8 +2,11 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import {
     getFloorMap,
     saveUnitOverlay,
+    saveUnitOverlayAsOwner,
     toggleUnitStatus,
+    toggleUnitStatusAsOwner,
     uploadFloorPlan,
+    uploadFloorPlanAsOwner,
 } from '@/api/floorMapApi';
 import type { UnitOverlayPutBody, UnitStatusPatchBody } from '@/lib/contracts/preVisualMapContracts';
 
@@ -83,6 +86,64 @@ export function useUploadFloorPlan(floorId: number | string | null | undefined) 
                 return Promise.reject(new Error('No floor selected'));
             }
             return uploadFloorPlan(floorId, formData);
+        },
+        onSuccess: async () => {
+            invalidateFloorMap(qc, floorId);
+        },
+    });
+}
+
+/** Mutations for property owners (`POST|PUT|PATCH` under `/api/v1/owner/floors/...`). */
+export function useSaveOverlayOwner(floorId: number | string | null | undefined) {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            unitId,
+            overlay,
+        }: {
+            unitId: number | string;
+            overlay: UnitOverlayPutBody;
+        }) => {
+            if (floorId == null || String(floorId).length === 0) {
+                return Promise.reject(new Error('No floor selected'));
+            }
+            return saveUnitOverlayAsOwner(unitId, overlay);
+        },
+        onSuccess: async () => {
+            invalidateFloorMap(qc, floorId);
+        },
+    });
+}
+
+export function useToggleUnitStatusOwner(floorId: number | string | null | undefined) {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            unitId,
+            body,
+        }: {
+            unitId: number | string;
+            body: UnitStatusPatchBody;
+        }) => {
+            if (floorId == null || String(floorId).length === 0) {
+                return Promise.reject(new Error('No floor selected'));
+            }
+            return toggleUnitStatusAsOwner(unitId, body);
+        },
+        onSuccess: async () => {
+            invalidateFloorMap(qc, floorId);
+        },
+    });
+}
+
+export function useUploadFloorPlanOwner(floorId: number | string | null | undefined) {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (formData: FormData) => {
+            if (floorId == null || String(floorId).length === 0) {
+                return Promise.reject(new Error('No floor selected'));
+            }
+            return uploadFloorPlanAsOwner(floorId, formData);
         },
         onSuccess: async () => {
             invalidateFloorMap(qc, floorId);

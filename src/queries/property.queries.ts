@@ -1,73 +1,87 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Property, PropertyFilter } from '@/schemas/property.schema';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+    createProperty,
+    deleteProperty,
+    fetchOwnerPropertiesPage,
+    fetchPropertiesPage,
+    fetchPropertyDetail,
+    patchProperty,
+} from '@/api/propertyApi';
+import type {
+    PropertyCreateInput,
+    PropertyListParams,
+    PropertyPatchInput,
+} from '@/schemas/property.schema';
 
-// ── Query keys ────────────────────────────────────────────────────────────────
 export const propertyKeys = {
     all: ['properties'] as const,
-    list: (filters?: PropertyFilter) => [...propertyKeys.all, 'list', filters] as const,
-    detail: (id: string) => [...propertyKeys.all, 'detail', id] as const,
+    list: (params?: PropertyListParams) => [...propertyKeys.all, 'list', params ?? {}] as const,
+    detail: (id: string | number) => [...propertyKeys.all, 'detail', String(id)] as const,
 };
 
-// ── Placeholder fetch functions (replace with real API calls) ─────────────────
-async function fetchProperties(_filters?: PropertyFilter): Promise<Property[]> {
-    // TODO: replace with actual API call e.g. axios.get('/api/properties', { params: filters })
-    return [];
-}
+export const ownerPropertyKeys = {
+    all: ['owner-properties'] as const,
+    list: (params?: PropertyListParams) => [...ownerPropertyKeys.all, 'list', params ?? {}] as const,
+};
 
-async function fetchProperty(id: string): Promise<Property | null> {
-    // TODO: replace with actual API call e.g. axios.get(`/api/properties/${id}`)
-    console.log('fetchProperty', id);
-    return null;
-}
-
-async function createProperty(data: Omit<Property, 'id' | 'createdAt'>): Promise<Property> {
-    // TODO: replace with actual API call e.g. axios.post('/api/properties', data)
-    return { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-}
-
-async function updateProperty(data: Partial<Property> & { id: string }): Promise<Property> {
-    // TODO: replace with actual API call e.g. axios.put(`/api/properties/${data.id}`, data)
-    return data as Property;
-}
-
-// ── Hooks ─────────────────────────────────────────────────────────────────────
-
-/** Fetch all properties, optionally filtered */
-export function useProperties(filters?: PropertyFilter) {
+export function useOwnerProperties(params?: PropertyListParams) {
     return useQuery({
-        queryKey: propertyKeys.list(filters),
-        queryFn: () => fetchProperties(filters),
+        queryKey: ownerPropertyKeys.list(params),
+        queryFn: () => fetchOwnerPropertiesPage(params),
     });
 }
 
-/** Fetch a single property by id */
-export function useProperty(id: string) {
+export function useProperties(params?: PropertyListParams) {
     return useQuery({
-        queryKey: propertyKeys.detail(id),
-        queryFn: () => fetchProperty(id),
-        enabled: Boolean(id),
+        queryKey: propertyKeys.list(params),
+        queryFn: () => fetchPropertiesPage(params),
     });
 }
 
-/** Create a new property */
+export function useProperty(id: string | number | null | undefined) {
+    const sid = id !== null && id !== undefined ? String(id) : '';
+    return useQuery({
+        queryKey: propertyKeys.detail(sid),
+        queryFn: () => fetchPropertyDetail(id as string | number),
+        enabled: sid.length > 0,
+    });
+}
+
 export function useCreateProperty() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: createProperty,
+        mutationFn: (body: PropertyCreateInput) => createProperty(body),
         onSuccess: () => {
-            qc.invalidateQueries({ queryKey: propertyKeys.all });
+            void qc.invalidateQueries({ queryKey: propertyKeys.all });
+            void qc.invalidateQueries({ queryKey: ownerPropertyKeys.all });
         },
     });
 }
 
-/** Update an existing property */
-export function useUpdateProperty() {
+export function usePatchProperty() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: updateProperty,
-        onSuccess: (_data, variables) => {
-            qc.invalidateQueries({ queryKey: propertyKeys.detail(variables.id) });
-            qc.invalidateQueries({ queryKey: propertyKeys.all });
+        mutationFn: ({ id, patch }: { id: number | string; patch: PropertyPatchInput }) =>
+            patchProperty(id, patch),
+        onSuccess: (_data, vars) => {
+            void qc.invalidateQueries({ queryKey: propertyKeys.detail(vars.id) });
+            void qc.invalidateQueries({ queryKey: propertyKeys.all });
+            void qc.invalidateQueries({ queryKey: ownerPropertyKeys.all });
+        },
+    });
+}
+
+/** @deprecated Use {@link usePatchProperty}. */
+export const useUpdateProperty = usePatchProperty;
+
+export function useDeleteProperty() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number | string) => deleteProperty(id),
+        onSuccess: (_data, id) => {
+            void qc.invalidateQueries({ queryKey: propertyKeys.detail(id) });
+            void qc.invalidateQueries({ queryKey: propertyKeys.all });
+            void qc.invalidateQueries({ queryKey: ownerPropertyKeys.all });
         },
     });
 }

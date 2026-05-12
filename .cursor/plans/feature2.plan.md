@@ -1,297 +1,157 @@
-# Feature 2 — Property management
+# Feature 2 — Property onboarding + structure + Visual Map
 
-CRUD for properties owned by landlords; public/searchable listing for tenants and marketplace.
+End-to-end flow for landlords/property managers: **create a property listing → define floors and units → configure the visual floor map** (image + overlays). This document is aligned with the **current backend and webapp**, not the legacy sketch that assumed enum `PropertyType`, `monthlyRent` on `Property`, etc.
 
-## Goals
+## Related plans (read first)
 
-- `Property` entity with `owner` → `User` (many-to-one)
-- REST under `/api/v1/properties` with filtering
-- Frontend: marketplace + detail + owner inventory backed by API
+| Plan | Purpose |
+|------|---------|
+| [pre_visual_map_feature.plan.md](./pre_visual_map_feature.plan.md) | Auth, RBAC, API client, public `/floors/{id}/map` vs `/admin/**` |
+| [visual_map_feature.plan.md](./visual_map_feature.plan.md) | Visual Map V2 (floor plans, overlays, owner/admin APIs, webapp hooks) |
+| Backend module note | `/home/lynx/Desktop/property-management/src/main/java/dev/hud/PropertyManagementSystem/visualmap/README.md` |
 
-## Backend steps
+## Product flow (owner)
 
-1. **Package layout** (example)  
-   `property/Property.java`, `PropertyRepository.java`, `PropertyService.java`, `PropertyController.java`, DTOs under `payloads/requests|responses/property/`.
+```mermaid
+flowchart LR
+  subgraph phase1 [Phase_1_Listing]
+    A[Create_Property]
+    B[Docs_images_amenities]
+  end
+  subgraph phase2 [Phase_2_Structure]
+    C[Define_floors_and_units]
+    D[Unit_metadata]
+  end
+  subgraph phase3 [Phase_3_Visual_Map]
+    E[Upload_floor_plans]
+    F[Draw_overlays]
+    G[Availability_status]
+  end
+  A --> B --> C --> D --> E --> F --> G
+```
 
-2. **Entity**  
-   Fields aligned with spec: `title`, `description`, `rent` (BigDecimal), `location`, `status` (e.g. DRAFT, AVAILABLE, RENTED), `owner` FK, optional `bedrooms`, `bathrooms`, image keys or URLs. Use `@CreatedDate` / audit if desired.
+- **Phase 3** is largely **implemented** (requires existing `floorId` / `FloorUnit` rows).
+- **Phase 2 (backend)** is **implemented**: `PropertyStructureOwnerController` under `/api/v1/owner/properties/{propertyId}/…` (floors CRUD, bulk units, unit PATCH). **Webapp wizard / floor picker** is still **planned**.
+- **Phase 1** is largely **done** on the backend (JWT ownership on create, detail/PATCH/DELETE, amenities/gallery/ownership docs on `Property`); marketplace UX remains separate work (see gap table).
 
-3. **Authorization**  
-   - `GET /properties`, `GET /properties/{id}`: authenticated or public read (product decision; marketplace may allow anonymous read with limited fields).  
-   - `POST`, `PUT`, `DELETE`: owner must match `owner_id` or `ADMIN`.
+## Domain as implemented (Option B)
 
-4. **Endpoints**  
-   - `POST /api/v1/properties`  
-   - `GET /api/v1/properties` — query params: `location`, `minRent`, `maxRent`, `status`, pagination  
-   - `GET /api/v1/properties/{id}`  
-   - `PUT /api/v1/properties/{id}`  
-   - `DELETE /api/v1/properties/{id}` — soft delete or restrict if active lease exists (business rule)
+**One `Property` = one building root** for the visual map (no separate `Building` entity today).
 
-5. **Validation**  
-   DTOs with `@NotBlank`, `@Positive` for rent; return 400 with clear messages.
+```
+Property (PROPERTY)
+ └── Floor (FLOOR)
+      ├── FloorPlan (FLOOR_PLAN) — 1:1, image + dimensions
+      └── FloorUnit (FLOOR_UNIT) — units; monthly rent & bedrooms here
+            └── UnitOverlay (UNIT_OVERLAY) — 1:1, x/y/w/h %
+```
 
-## Frontend steps
+**Important:** **`Property` does not carry monthly rent.** Rent is on **`FloorUnit.monthlyRent`** (`/home/lynx/Desktop/property-management/src/main/java/dev/hud/PropertyManagementSystem/models/property/FloorUnit.java`). Property **type** uses a **catalog** (`PropertyType` entity + `propertyTypeId` / `propertyTypeName` on `Property`), not the enum block from older docs.
 
-1. **Schemas**  
-   Align `src/schemas/property.schema.ts` with API (`id` type: string vs number — pick one and convert in mappers).
+**`PropertyStatus`** (`DRAFT`, `AVAILABLE`, `RENTED`, `MAINTENANCE`, `ARCHIVED`) applies to the listing. **`FloorUnitStatus`** (`AVAILABLE`, `OCCUPIED`) drives map clickability on the public floor map.
 
-2. **Queries**  
-   Implement `fetchProperties`, `fetchProperty`, `createProperty`, `updateProperty` in `src/queries/property.queries.ts` using `apiClient`.
+## Endpoint matrix
 
-3. **Marketplace**  
-   Replace hardcoded arrays in `pages/MarketPlace.tsx` with `useProperties(filters)`.
+### A. Listing — `/api/v1/properties` (partially done)
 
-4. **Property detail**  
-   `pages/PropertyDetail.tsx`: load by route param id; show owner actions only if current user owns property.
+| Method | Path | Auth / notes | Status |
+|--------|------|----------------|--------|
+| GET | `/api/v1/properties` | Authenticated | **Done** — paginated list → `PropertyResponse` |
+| POST | `/api/v1/properties` | `LAND_LORD` | **Done** — owner from JWT; optional amenities/gallery/docs on `PropertyRequest` |
+| GET | `/api/v1/properties/{id}` | Authenticated | **Done** — `PropertyDetailResponse` (ownership docs masked unless owner/admin) |
+| PATCH | `/api/v1/properties/{id}` | Owner / Admin | **Done** — `PropertyPatchRequest` |
+| DELETE | `/api/v1/properties/{id}` | Owner / Admin | **Done** — soft-delete (`deleted = true`) |
 
-5. **Owner inventory**  
-   `pages/owner/PropertyInventory.tsx`: list owned properties, create/edit forms, link to applications (Feature 3).
+Filters (`location`, `minRent`, `status`, …) depend on listing/product rules once detail and marketplace contracts exist.
 
-## API sketch
+### B. Structure (owner) — `/api/v1/owner/properties/...` (**backend done**)
 
-| Method | Path | Auth |
-|--------|------|------|
-| GET | `/api/v1/properties` | Optional/spec-dependent |
-| GET | `/api/v1/properties/{id}` | Optional/spec-dependent |
-| POST | `/api/v1/properties` | Landlord / Admin |
-| PUT | `/api/v1/properties/{id}` | Owner or Admin |
-| DELETE | `/api/v1/properties/{id}` | Owner or Admin |
+Implemented by `PropertyStructureOwnerController` + `PropertyStructureService`. JWT **`LAND_LORD`** or **`ADMIN`/`SUPER_ADMIN`** at controller level; mutating/list paths still require **owner or admin** in the service layer (`Property.owner`).
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/owner/properties/{propertyId}/floors` | List floors (+ unit counts) |
+| GET | `/owner/properties/{propertyId}/floors/{floorId}/units` | List units |
+| POST | `/owner/properties/{propertyId}/floors` | Create floor (`label`, `sortOrder`) |
+| PATCH | `/owner/properties/{propertyId}/floors/{floorId}` | Partial update floor |
+| DELETE | `/owner/properties/{propertyId}/floors/{floorId}` | Delete floor (drops stored floor-plan file; cascades units/overlays) |
+| POST | `/owner/properties/{propertyId}/floors/{floorId}/units` | Bulk create units |
+| PATCH | `/owner/properties/{propertyId}/units/{unitId}` | Update unit metadata |
+
+Deleting a floor removes **`FloorPlan`** and its image via **`FloorPlanStorageService`** before removing **`Floor`**.
+
+### C. Visual map (existing)
+
+| Method | Path | Audience |
+|--------|------|----------|
+| GET | `/api/v1/floors/{floorId}/map` | **Public** |
+| POST | `/api/v1/owner/floors/{floorId}/plan` | Owner — multipart plan |
+| PUT | `/api/v1/owner/floors/units/{unitId}/overlay` | Owner |
+| PATCH | `/api/v1/owner/floors/units/{unitId}/status` | Owner |
+| POST/PUT/PATCH | `/api/v1/admin/floors/...` | Admin override |
+
+See `FloorMapPublicController`, `FloorMapOwnerController`, `FloorMapAdminController` under  
+`/home/lynx/Desktop/property-management/src/main/java/dev/hud/PropertyManagementSystem/controllers/visualmap/`.
+
+### D. Marketplace / tenant (future)
+
+- Public or scoped **GET** listings and **GET** property detail (policy + field masking).
+- Webapp: replace hardcoded data in `src/pages/MarketPlace.tsx`, `src/pages/PropertyDetail.tsx`; deep-link to `/floors/:floorId/map`.
+
+## Gap analysis (requirements vs code)
+
+| Requirement | Status |
+|-------------|--------|
+| Property name, type, address/location | **Partial** — title, catalog type id/name, location + region/district/ward ids |
+| Ownership documents | **Backend done** — `PropertyOwnershipDocument` + PATCH/detail masking rules |
+| Property-level gallery images | **Backend done** — `PropertyGalleryImage` paths |
+| Amenities | **Backend done** — `PROPERTY_AMENITY` element collection |
+| Number of buildings | **Ambiguous** — Option B = one building per property unless we add `Building` or multiple listings |
+| Floors count / floor definitions | **Backend done** — owner structure APIs (`GET`/`POST`/`PATCH`/`DELETE` floors) |
+| Units per floor + number, rent, bedrooms, availability | **Backend done** — bulk create + PATCH unit; **`FloorUnitType`** on unit + public map **`unitType`** field |
+| Visual layout | **Done** once floors/units exist and overlays uploaded |
+| Marketplace | **Not done** for UX (`MarketPlace.tsx`, etc.); **API layer** for listings exists (`propertyApi` + `property.queries.ts`). |
+
+## Backend implementation roadmap (concise)
+
+1. ~~**PropertyService**~~ — shipped (JWT owner, detail/PATCH/DELETE, amenities/gallery/docs).
+2. ~~**PropertyStructureOwnerController + service**~~ — shipped under `/owner/properties/{propertyId}/…`.
+3. ~~**Unit type**~~ — `FloorUnitType` on `FloorUnit`; exposed via `UnitMapUnitDto` / structure responses (webapp contract updated).
+4. **Tests** — integration coverage for structure ownership + public map unchanged.
+
+## Frontend implementation roadmap (concise)
+
+1. ~~Align **`property.schema.ts`** / **`property.queries.ts`** + **`propertyStructure` schemas/API/queries**~~ — wired to backend (`src/api/propertyApi.ts`, `src/api/propertyStructureApi.ts`).
+2. **Onboarding wizard** — listing → structure → navigate to owner visual map **with floor picker** (replace manual floor id entry in `src/pages/owner/VisualMapOwner.tsx`).
+3. **Inventory / marketplace** — consume hooks in pages (`MarketPlace.tsx`, `PropertyInventory.tsx`, `PropertyDetail.tsx`).
 
 ## Acceptance criteria
 
-- [ ] Landlord creates property and sees it in `GET` list scoped or filterable by owner
-- [ ] Tenant sees properties on marketplace with filters
-- [ ] Unauthorized user cannot mutate another user’s property
+- [ ] Owner creates a property with **ownership from JWT**, not spoofable client user id.
+- [ ] Owner defines **floors and units via API** without manually typing opaque database ids for normal UX.
+- [ ] Owner completes **visual map** per floor using existing upload/overlay/status flows.
+- [ ] Optional: tenants browse listings and open floor maps for available units.
+- [ ] Optional: documents/images/amenities stored and served per security policy.
 
-## Data model
+## Non-goals (unless product expands scope)
 
-### Enums
+- Separate **`Building`** aggregate under one listing (defer multi-building modeling).
+- Reintroducing **single `monthlyRent` on `Property`** as source of truth (use units or derived aggregates).
 
-```java
-// models/property/PropertyType.java
-public enum PropertyType {
-    APARTMENT,   // flat in a multi-unit building
-    HOUSE,       // standalone residential
-    STUDIO,      // single-room with kitchenette
-    COMMERCIAL,  // offices, shops
-    LAND         // undeveloped plot
-}
+## Testing benchmark (updated emphasis)
 
-// models/property/PropertyStatus.java
-public enum PropertyStatus {
-    DRAFT,       // saved but not visible on marketplace
-    AVAILABLE,   // visible, accepting applications
-    RENTED,      // active lease; hidden from applications
-    MAINTENANCE, // temporarily unavailable
-    ARCHIVED     // soft-deleted / no longer listed
-}
-```
+| ID | Scenario | Expected |
+|----|----------|----------|
+| F2-01 | Create property | Authenticated landlord; `owner_id` matches JWT subject |
+| F2-02 | Structure APIs | Owner can CRUD floors/units only for owned `propertyId`; others 403 |
+| F2-03 | Visual map | Unchanged public map; owner/admin mutations still gated |
+| F2-04 | Marketplace | List/detail + filters once implemented |
+| F2-FE-01 | Wizard | Listing → structure → visual map without raw floor id |
 
-### Java entity
+## Code references (webapp)
 
-```java
-// models/property/Property.java
-@Entity
-@Table(
-    name = "PROPERTIES",
-    indexes = {
-        @Index(name = "idx_property_owner",  columnList = "OWNER_ID"),
-        @Index(name = "idx_property_status", columnList = "STATUS"),
-        @Index(name = "idx_property_region", columnList = "REGION")
-    }
-)
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
-public class Property {
-
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID")
-    private Long id;
-
-    // Owner — LANDLORD or CARETAKER acting on behalf of landlord
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "OWNER_ID", nullable = false)
-    private User owner;
-
-    @Column(name = "TITLE", nullable = false)
-    private String title;
-
-    @Column(name = "DESCRIPTION", columnDefinition = "TEXT")
-    private String description;
-
-    @Column(name = "MONTHLY_RENT", nullable = false, precision = 15, scale = 2)
-    private BigDecimal monthlyRent;
-
-    @Column(name = "CURRENCY", length = 3, nullable = false)
-    private String currency = "TZS";
-
-    @Column(name = "LOCATION", nullable = false)   // city / neighbourhood
-    private String location;
-
-    @Column(name = "ADDRESS")                      // full street address
-    private String address;
-
-    @Column(name = "REGION")                       // broad region for reports
-    private String region;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "TYPE", nullable = false)
-    private PropertyType type;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "STATUS", nullable = false)
-    private PropertyStatus status = PropertyStatus.DRAFT;
-
-    @Column(name = "BEDROOMS")
-    private Integer bedrooms;
-
-    @Column(name = "BATHROOMS")
-    private Integer bathrooms;
-
-    @Column(name = "SIZE_SQM", precision = 8, scale = 2)
-    private BigDecimal sizeSqm;
-
-    @Column(name = "FURNISHED", nullable = false)
-    private Boolean furnished = false;
-
-    @Column(name = "UTILITIES_INCLUDED", nullable = false)
-    private Boolean utilitiesIncluded = false;
-
-    // Stored as JSON array e.g. ["Parking","WiFi","Generator"]
-    @Column(name = "AMENITIES", columnDefinition = "TEXT")
-    private String amenities;
-
-    // Stored as JSON array of file paths / URLs
-    @Column(name = "IMAGE_URLS", columnDefinition = "TEXT")
-    private String imageUrls;
-
-    @CreationTimestamp
-    @Column(name = "CREATED_AT", updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "UPDATED_AT")
-    private LocalDateTime updatedAt;
-}
-```
-
-### Frontend: Zod schema
-
-```typescript
-// src/schemas/property.schema.ts  (replace existing)
-import { z } from 'zod';
-
-export const PropertyTypeSchema = z.enum([
-  'APARTMENT', 'HOUSE', 'STUDIO', 'COMMERCIAL', 'LAND'
-]);
-
-export const PropertyStatusSchema = z.enum([
-  'DRAFT', 'AVAILABLE', 'RENTED', 'MAINTENANCE', 'ARCHIVED'
-]);
-
-export const PropertySchema = z.object({
-  id: z.number(),
-  owner: z.object({ id: z.number(), name: z.string() }),
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
-  monthlyRent: z.number().positive('Rent must be a positive number'),
-  currency: z.string().default('TZS'),
-  location: z.string().min(1),
-  address: z.string().optional(),
-  region: z.string().optional(),
-  type: PropertyTypeSchema,
-  status: PropertyStatusSchema,
-  bedrooms: z.number().int().min(0).optional(),
-  bathrooms: z.number().int().min(0).optional(),
-  sizeSqm: z.number().positive().optional(),
-  furnished: z.boolean().default(false),
-  utilitiesIncluded: z.boolean().default(false),
-  amenities: z.array(z.string()).default([]),
-  imageUrls: z.array(z.string()).default([]),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
-});
-
-export const PropertyFilterSchema = z.object({
-  location: z.string().optional(),
-  region: z.string().optional(),
-  type: PropertyTypeSchema.optional(),
-  status: PropertyStatusSchema.optional(),
-  minRent: z.number().optional(),
-  maxRent: z.number().optional(),
-  bedrooms: z.number().optional(),
-  furnished: z.boolean().optional(),
-});
-
-export type Property = z.infer<typeof PropertySchema>;
-export type PropertyFilter = z.infer<typeof PropertyFilterSchema>;
-```
-
-### Response DTO shape (backend)
-
-```java
-// payloads/responses/property/PropertyResponse.java
-public class PropertyResponse {
-    Long id;
-    String title;
-    String description;
-    BigDecimal monthlyRent;
-    String currency;
-    String location;
-    String address;
-    String region;
-    String type;
-    String status;
-    Integer bedrooms;
-    Integer bathrooms;
-    BigDecimal sizeSqm;
-    Boolean furnished;
-    Boolean utilitiesIncluded;
-    List<String> amenities;
-    List<String> imageUrls;
-    OwnerSummary owner;   // { id, name, verified }
-    LocalDateTime createdAt;
-}
-
-// payloads/requests/property/PropertyRequest.java  (create + update)
-public class PropertyRequest {
-    @NotBlank String title;
-    String description;
-    @NotNull @Positive BigDecimal monthlyRent;
-    @Size(min=3,max=3) String currency;
-    @NotBlank String location;
-    String address;
-    String region;
-    @NotNull PropertyType type;
-    PropertyStatus status;
-    Integer bedrooms;
-    Integer bathrooms;
-    BigDecimal sizeSqm;
-    Boolean furnished;
-    Boolean utilitiesIncluded;
-    List<String> amenities;
-    List<String> imageUrls;
-}
-```
-
-## Testing benchmark
-
-| ID | Scenario | Preconditions | Steps | Expected outcome |
-|----|----------|---------------|-------|------------------|
-| F2-01 | Create property | Authenticated `LANDLORD` | POST full valid payload | 201; row exists; `owner_id` = caller |
-| F2-02 | List + filter | Several properties with different `region`, `status`, `monthlyRent` | GET with query params | Only matching rows; pagination meta correct if used |
-| F2-03 | Public vs auth read | Policy chosen (public marketplace or auth-only) | GET list/detail without token (if allowed) | Consistent with policy; no sensitive owner PII if public |
-| F2-04 | Read one | Property exists | GET by id | 200; shape matches contract |
-| F2-05 | Update own | User A owns property | User A PUT | 200; fields updated |
-| F2-06 | Update foreign | User B not owner | User B PUT User A’s property | 403 |
-| F2-07 | Delete constraints | Property has `ACTIVE` lease (if rule exists) | Owner DELETE | 409 or 400 with clear reason, or soft-archive only |
-| F2-08 | Validation | — | POST with missing `title` or negative rent | 400; field errors or exit message |
-| F2-09 | Admin override | Admin user | Admin mutates any property | Allowed only if spec says so; 403 if not |
-| F2-FE-01 | Marketplace | API returns data | Open marketplace | Filters change results; empty state when no match |
-| F2-FE-02 | Owner inventory | Landlord has N properties | Open inventory | Shows exactly N; edit navigates to detail |
-
-**Data checks:** after F2-01, DB row `STATUS` default sensible; `CREATED_AT` set.
-
-## References
-
-- Frontend: `queries/property.queries.ts`, `schemas/property.schema.ts`, `pages/MarketPlace.tsx`, `pages/PropertyDetail.tsx`, `pages/owner/PropertyInventory.tsx`
-- Spec: Module 2 in `pms_implementation_plan.txt`
+- `src/schemas/property.schema.ts`, `src/schemas/propertyStructure.schema.ts`
+- `src/api/propertyApi.ts`, `src/api/propertyStructureApi.ts`
+- `src/queries/property.queries.ts`, `src/queries/propertyStructure.queries.ts`
+- `src/pages/MarketPlace.tsx`, `src/pages/PropertyDetail.tsx`, `src/pages/owner/PropertyInventory.tsx`
+- `src/pages/owner/VisualMapOwner.tsx`, `src/api/floorMapApi.ts`, `src/hooks/useFloorMap.ts`

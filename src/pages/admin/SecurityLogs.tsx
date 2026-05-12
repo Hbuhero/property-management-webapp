@@ -1,5 +1,6 @@
 import { ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 const fadeUp = {
     initial: { opacity: 0, y: 16 },
@@ -50,9 +51,12 @@ const SecurityLogs = () => {
                             <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase ${badgeColor[log.severity]}`}>
                                 {log.severity}
                             </span>
-                            <button className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 px-3 py-1.5 rounded-lg transition-colors">
-                                Investigate
-                            </button>
+                            <Link
+                                to="/admin/users"
+                                className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-emerald-500 px-3 py-1.5 rounded-lg transition-colors"
+                            >
+                                Review accounts
+                            </Link>
                         </div>
                     </motion.div>
                 ))}

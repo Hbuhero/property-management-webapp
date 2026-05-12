@@ -7,6 +7,14 @@ export type UnitInfoPanelProps = {
     onEnquire?: () => void;
 };
 
+function formatFloorUnitType(unitType: string | null | undefined): string | null {
+    if (!unitType?.trim()) return null;
+    return unitType
+        .split('_')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(' ');
+}
+
 function formatMoney(n: number | null | undefined): string {
     if (n == null || Number.isNaN(n)) return '—';
     return new Intl.NumberFormat(undefined, {
@@ -36,6 +44,7 @@ export function UnitInfoPanel({ unit, floorLabel, onEnquire }: UnitInfoPanelProp
     }
 
     const available = unit.status === 'AVAILABLE';
+    const typeLabel = formatFloorUnitType(unit.unitType ?? undefined);
 
     return (
         <aside
@@ -62,6 +71,12 @@ export function UnitInfoPanel({ unit, floorLabel, onEnquire }: UnitInfoPanelProp
             </div>
 
             <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
+                {typeLabel && (
+                    <div className="col-span-2">
+                        <dt className="text-slate-500">Unit type</dt>
+                        <dd className="font-medium text-slate-900">{typeLabel}</dd>
+                    </div>
+                )}
                 <div>
                     <dt className="text-slate-500">Bedrooms</dt>
                     <dd className="font-medium text-slate-900">{unit.bedrooms ?? '—'}</dd>
