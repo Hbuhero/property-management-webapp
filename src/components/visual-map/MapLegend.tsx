@@ -1,5 +1,5 @@
 /**
- * Compact legend for available vs occupied units on the floor map.
+ * Compact legend for unit states on the floor map.
  */
 export function MapLegend() {
     return (
@@ -20,6 +20,13 @@ export function MapLegend() {
                     aria-hidden
                 />
                 Occupied
+            </span>
+            <span className="inline-flex items-center gap-2">
+                <span
+                    className="h-3 w-6 rounded border-2 border-amber-400/70 bg-amber-300/35"
+                    aria-hidden
+                />
+                Booked
             </span>
         </div>
     );

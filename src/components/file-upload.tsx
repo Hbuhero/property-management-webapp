@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback } from "react";
 
 const API_BASE = "https://api-new.shambabora.co.tz/api/v1/chunked-files";
-const CHUNK_SIZE = 64 * 1024; // 5 MB — must match backend
+// Cloudflare rejects >5 MB; 1 MB is safe under all CF plans (incl. Workers free).
+// Compensate with higher concurrency to keep throughput up.
+const CHUNK_SIZE = 1 * 1024 * 1024;        // 1 MB per chunk
 const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5 GB hard UI limit
 const MAX_RETRIES = 3;
-const CONCURRENCY = 3; // parallel chunks in-flight at once
+const CONCURRENCY = 6; // more parallel requests to offset smaller chunks
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

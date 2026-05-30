@@ -13,6 +13,7 @@ export type UnitOverlayProps = {
  */
 export function UnitOverlay({ unit, selected, onSelect }: UnitOverlayProps) {
     const isAvailable = unit.status === 'AVAILABLE';
+    const isBooked = unit.status === 'BOOKED';
     const style: CSSProperties = {
         left: `${unit.xPct}%`,
         top: `${unit.yPct}%`,
@@ -25,12 +26,16 @@ export function UnitOverlay({ unit, selected, onSelect }: UnitOverlayProps) {
             ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-white/90'
             : isAvailable
               ? 'ring-1 ring-emerald-600/50 hover:ring-2 hover:ring-emerald-500'
-              : 'ring-1 ring-slate-500/40';
+              : isBooked
+                ? 'ring-1 ring-amber-500/50'
+                : 'ring-1 ring-slate-500/40';
 
     if (!isAvailable) {
         return (
             <div
-                className={`pointer-events-none absolute rounded-md bg-slate-900/35 ${baseRing}`}
+                className={`pointer-events-none absolute rounded-md ${
+                    isBooked ? 'bg-amber-500/25' : 'bg-slate-900/35'
+                } ${baseRing}`}
                 style={style}
                 aria-hidden
             />

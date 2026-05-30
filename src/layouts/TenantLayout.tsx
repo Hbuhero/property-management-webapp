@@ -30,7 +30,10 @@ const TenantLayout = () => {
                     <nav className="space-y-1">
                         {navItems.map((item) => {
                             const Icon = item.icon;
-                            const isActive = location.pathname === item.path || (item.path === '/tenant' && location.pathname === '/tenant');
+                            const isActive =
+                                item.path === '/tenant'
+                                    ? location.pathname === '/tenant'
+                                    : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
                             return (
                                 <Link
                                     key={item.path}

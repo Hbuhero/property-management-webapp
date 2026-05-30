@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, ImagePlus, LayoutGrid, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, ExternalLink, FileText, ImagePlus, LayoutGrid, PlusCircle, Trash2, Upload } from 'lucide-react';
 import { uploadListingImage } from '@/api/fileUploadApi';
 import { OverlayEditor } from '@/components/visual-map/OverlayEditor';
 import { resolveFloorPlanImageUrl } from '@/components/visual-map/resolveFloorPlanUrl';
@@ -12,12 +12,37 @@ import {
 } from '@/hooks/useFloorMap';
 import { resolveFloorThumbnailUrl, resolvePropertyImageUrl } from '@/lib/propertyMediaUrl';
 import { showError, showSuccess } from '@/lib/toast';
-import type { UnitOverlayPutBody } from '@/lib/contracts/preVisualMapContracts';
+import type { UnitMapUnitDto, UnitOverlayPutBody } from '@/lib/contracts/preVisualMapContracts';
+import { useLeasePreset, useSaveLeasePreset } from '@/queries/leasePreset.queries';
 import { usePatchOwnerFloor, useOwnerFloors } from '@/queries/propertyStructure.queries';
 import { useOwnerProperties } from '@/queries/property.queries';
 import type { PropertySummary } from '@/schemas/property.schema';
 
 const MAX_FLOOR_GALLERY = 12;
+
+type LeasePresetItemDraft = {
+    id: string;
+    label: string;
+    description: string;
+    amount: string;
+    leaseType: 'RECURRING' | 'ONE_TIME';
+    timeFrame: 'DAY' | 'MONTH' | 'YEAR' | 'NONE';
+    startDate: string;
+    recurringNumber: string;
+};
+
+function newPresetItem(unit?: UnitMapUnitDto | null): LeasePresetItemDraft {
+    return {
+        id: `${Date.now()}-${Math.random()}`,
+        label: 'Monthly rent',
+        description: '',
+        amount: unit?.monthlyRent != null ? String(unit.monthlyRent) : '',
+        leaseType: 'RECURRING',
+        timeFrame: 'MONTH',
+        startDate: '',
+        recurringNumber: '1',
+    };
+}
 
 function propertyCardThumb(p: PropertySummary): string {
     const fromPaths =
@@ -47,6 +72,326 @@ function readImageDimensions(file: File): Promise<{ w: number; h: number }> {
         };
         img.src = url;
     });
+}
+
+function LeasePresetEditor({
+    propertyId,
+    unit,
+}: {
+    propertyId: number | null;
+    unit: UnitMapUnitDto | null;
+}) {
+    const presetQuery = useLeasePreset(propertyId, unit?.unitId);
+    const savePreset = useSaveLeasePreset();
+    const [terms, setTerms] = useState('');
+    const [durationMonths, setDurationMonths] = useState(12);
+    const [paymentDayOfMonth, setPaymentDayOfMonth] = useState(1);
+    const [active, setActive] = useState(true);
+    const [bookingRequirements, setBookingRequirements] = useState('');
+    const [itemRows, setItemRows] = useState<LeasePresetItemDraft[]>(() => [newPresetItem()]);
+
+    useEffect(() => {
+        const preset = presetQuery.data;
+        setTerms(preset?.terms ?? '');
+        setDurationMonths(preset?.durationMonths ?? 12);
+        setPaymentDayOfMonth(preset?.paymentDayOfMonth ?? 1);
+        setActive(preset?.active ?? true);
+        setBookingRequirements(preset?.bookingRequirements?.join('\n') ?? '');
+        setItemRows(
+            preset?.items?.length
+                ? preset.items.map((item) => ({
+                      id: String(item.id ?? `${Date.now()}-${Math.random()}`),
+                      label: item.label,
+                      description: item.description ?? '',
+                      amount: String(item.amount),
+                      leaseType: item.leaseType ?? 'ONE_TIME',
+                      timeFrame: item.timeFrame ?? 'NONE',
+                      startDate: item.startDate ?? '',
+                      recurringNumber: item.recurringNumber != null ? String(item.recurringNumber) : '',
+                  }))
+                : [newPresetItem(unit)],
+        );
+    }, [presetQuery.data, unit?.monthlyRent, unit?.unitId]);
+
+    const updateItem = (id: string, patch: Partial<LeasePresetItemDraft>) => {
+        setItemRows((rows) => rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+    };
+
+    const removeItem = (id: string) => {
+        setItemRows((rows) => (rows.length > 1 ? rows.filter((row) => row.id !== id) : rows));
+    };
+
+    const handleSave = async () => {
+        if (propertyId == null || !unit) return;
+        const items = itemRows
+            .map((row, sortOrder) => {
+                const amount = Number(row.amount);
+                const recurringNumber = row.recurringNumber.trim() ? Number(row.recurringNumber) : undefined;
+                if (!row.label.trim() || !Number.isFinite(amount) || amount <= 0) {
+                    return null;
+                }
+                return {
+                    label: row.label.trim(),
+                    description: row.description.trim() || undefined,
+                    amount,
+                    leaseType: row.leaseType,
+                    timeFrame: row.timeFrame,
+                    startDate: row.startDate.trim() || undefined,
+                    recurringNumber:
+                        row.leaseType === 'RECURRING'
+                            ? typeof recurringNumber === 'number' && Number.isFinite(recurringNumber)
+                                ? recurringNumber
+                                : 1
+                            : undefined,
+                    sortOrder,
+                };
+            })
+            .filter(
+                (
+                    item,
+                ): item is {
+                    label: string;
+                    description: string | undefined;
+                    amount: number;
+                    leaseType: 'RECURRING' | 'ONE_TIME';
+                    timeFrame: 'DAY' | 'MONTH' | 'YEAR' | 'NONE';
+                    startDate: string | undefined;
+                    recurringNumber: number | undefined;
+                    sortOrder: number;
+                } => item != null,
+            );
+        try {
+            await savePreset.mutateAsync({
+                propertyId,
+                unitId: unit.unitId,
+                body: {
+                    terms: terms.trim() || undefined,
+                    bookingRequirements: bookingRequirements.trim() || undefined,
+                    durationMonths,
+                    paymentDayOfMonth,
+                    active,
+                    items,
+                },
+            });
+            showSuccess('Lease preset saved');
+        } catch (e) {
+            showError(e instanceof Error ? e.message : 'Could not save lease preset');
+        }
+    };
+
+    return (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-start justify-between gap-4">
+                <div>
+                    <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
+                        <FileText className="h-4 w-4 text-emerald-600" aria-hidden />
+                        Lease preset
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Select a unit to define booking fields and scheduled contract items.
+                    </p>
+                </div>
+                {unit ? (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        Unit {unit.unitNumber}
+                    </span>
+                ) : null}
+            </div>
+
+            {!unit ? (
+                <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                    Pick a unit from the table above to edit its preset.
+                </p>
+            ) : presetQuery.isPending ? (
+                <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Loading preset…</p>
+            ) : (
+                <div className="mt-5 grid gap-4">
+                    <div className="grid gap-4 lg:grid-cols-2">
+                        <label>
+                            <span className="text-xs font-semibold uppercase text-slate-500">Terms</span>
+                            <textarea
+                                value={terms}
+                                onChange={(e) => setTerms(e.target.value)}
+                                rows={4}
+                                className="mt-1 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                placeholder="Default lease terms for this unit"
+                            />
+                        </label>
+                        <label>
+                            <span className="text-xs font-semibold uppercase text-slate-500">Booking fields</span>
+                            <textarea
+                                value={bookingRequirements}
+                                onChange={(e) => setBookingRequirements(e.target.value)}
+                                rows={4}
+                                className="mt-1 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                placeholder="National ID number&#10;Employment status&#10;Preferred move-in date"
+                            />
+                        </label>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                        <label>
+                            <span className="text-xs font-semibold uppercase text-slate-500">Months</span>
+                            <input
+                                type="number"
+                                min={1}
+                                max={120}
+                                value={durationMonths}
+                                onChange={(e) => setDurationMonths(Number(e.target.value))}
+                                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                            />
+                        </label>
+                        <label>
+                            <span className="text-xs font-semibold uppercase text-slate-500">Pay day</span>
+                            <input
+                                type="number"
+                                min={1}
+                                max={28}
+                                value={paymentDayOfMonth}
+                                onChange={(e) => setPaymentDayOfMonth(Number(e.target.value))}
+                                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                            />
+                        </label>
+                        <label className="flex items-end gap-2 pb-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                            <input
+                                type="checkbox"
+                                checked={active}
+                                onChange={(e) => setActive(e.target.checked)}
+                                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                            />
+                            Active
+                        </label>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <p className="text-xs font-semibold uppercase text-slate-500">Scheduled lease items</p>
+                            <button
+                                type="button"
+                                onClick={() => setItemRows((rows) => [...rows, newPresetItem(null)])}
+                                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-emerald-300 hover:text-emerald-700 dark:border-slate-700 dark:text-slate-200"
+                            >
+                                <PlusCircle className="h-4 w-4" />
+                                Add item
+                            </button>
+                        </div>
+                        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                            <table className="w-full min-w-[980px] text-left text-sm">
+                                <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800/60">
+                                    <tr>
+                                        {['Item', 'Amount', 'Type', 'Every', 'Start date', 'Count', ''].map((h) => (
+                                            <th key={h} className="px-3 py-2 font-semibold">
+                                                {h}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    {itemRows.map((row) => (
+                                        <tr key={row.id}>
+                                            <td className="px-3 py-2 align-top">
+                                                <input
+                                                    value={row.label}
+                                                    onChange={(e) => updateItem(row.id, { label: e.target.value })}
+                                                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                />
+                                                <input
+                                                    value={row.description}
+                                                    onChange={(e) => updateItem(row.id, { description: e.target.value })}
+                                                    placeholder="Description"
+                                                    className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                />
+                                            </td>
+                                            <td className="px-3 py-2 align-top">
+                                                <input
+                                                    type="number"
+                                                    min={0}
+                                                    value={row.amount}
+                                                    onChange={(e) => updateItem(row.id, { amount: e.target.value })}
+                                                    className="w-28 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                />
+                                            </td>
+                                            <td className="px-3 py-2 align-top">
+                                                <select
+                                                    value={row.leaseType}
+                                                    onChange={(e) =>
+                                                        updateItem(row.id, {
+                                                            leaseType: e.target.value as LeasePresetItemDraft['leaseType'],
+                                                            timeFrame:
+                                                                e.target.value === 'ONE_TIME' ? 'NONE' : row.timeFrame,
+                                                        })
+                                                    }
+                                                    className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                >
+                                                    <option value="RECURRING">Recurring</option>
+                                                    <option value="ONE_TIME">One-time</option>
+                                                </select>
+                                            </td>
+                                            <td className="px-3 py-2 align-top">
+                                                <select
+                                                    value={row.timeFrame}
+                                                    onChange={(e) =>
+                                                        updateItem(row.id, {
+                                                            timeFrame: e.target.value as LeasePresetItemDraft['timeFrame'],
+                                                        })
+                                                    }
+                                                    className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                >
+                                                    <option value="NONE">None</option>
+                                                    <option value="DAY">Day</option>
+                                                    <option value="MONTH">Month</option>
+                                                    <option value="YEAR">Year</option>
+                                                </select>
+                                            </td>
+                                            <td className="px-3 py-2 align-top">
+                                                <input
+                                                    type="date"
+                                                    value={row.startDate}
+                                                    onChange={(e) =>
+                                                        updateItem(row.id, { startDate: e.target.value })
+                                                    }
+                                                    className="w-36 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                />
+                                            </td>
+                                            <td className="px-3 py-2 align-top">
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    value={row.recurringNumber}
+                                                    onChange={(e) =>
+                                                        updateItem(row.id, { recurringNumber: e.target.value })
+                                                    }
+                                                    className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                />
+                                            </td>
+                                            <td className="px-3 py-2 align-top">
+                                                <button
+                                                    type="button"
+                                                    disabled={itemRows.length === 1}
+                                                    onClick={() => removeItem(row.id)}
+                                                    className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 dark:hover:bg-red-900/20"
+                                                    aria-label="Remove lease item"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <button
+                            type="button"
+                            disabled={savePreset.isPending}
+                            onClick={() => void handleSave()}
+                            className="w-fit rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                            {savePreset.isPending ? 'Saving…' : 'Save preset'}
+                        </button>
+                    </div>
+                </div>
+            )}
+        </section>
+    );
 }
 
 type VisualMapFloorEditorProps = {
@@ -189,6 +534,8 @@ function VisualMapFloorEditor({ propertyId, floorId }: VisualMapFloorEditorProps
     }
 
     if (!data) return null;
+
+    const selectedUnit = data.units.find((u) => u.unitId === selectedUnitId) ?? null;
 
     return (
         <div className="space-y-10">
@@ -382,6 +729,8 @@ function VisualMapFloorEditor({ propertyId, floorId }: VisualMapFloorEditorProps
                     </table>
                 </div>
             </section>
+
+            <LeasePresetEditor propertyId={propertyId} unit={selectedUnit} />
         </div>
     );
 }

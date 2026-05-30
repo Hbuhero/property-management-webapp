@@ -62,7 +62,7 @@ const UserCentral = () => {
 
     const busy = enableMut.isPending || disableMut.isPending || suspendMut.isPending || deleteMut.isPending;
 
-    const run = async (label: string, fn: () => Promise<void>) => {
+    const run = async (label: string, fn: () => Promise<unknown>) => {
         try {
             await fn();
             showSuccess(label);

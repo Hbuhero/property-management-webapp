@@ -148,6 +148,12 @@ const router = createBrowserRouter([
                                 }),
                             },
                             {
+                                path: 'lease/:applicationId',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/tenant/TenantApplicationDetail')).default,
+                                }),
+                            },
+                            {
                                 path: 'payments',
                                 lazy: async () => ({
                                     Component: (await import('./pages/tenant/PaymentHub')).default,
@@ -214,6 +220,12 @@ const router = createBrowserRouter([
                                 }),
                             },
                             {
+                                path: 'applications/:applicationId',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/ApplicationDetail')).default,
+                                }),
+                            },
+                            {
                                 path: 'finances',
                                 lazy: async () => ({
                                     Component: (await import('./pages/owner/FinancialReports')).default,
@@ -269,6 +281,12 @@ const router = createBrowserRouter([
                                 path: 'applications',
                                 lazy: async () => ({
                                     Component: (await import('./pages/owner/ApplicationInbox')).default,
+                                }),
+                            },
+                            {
+                                path: 'applications/:applicationId',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/ApplicationDetail')).default,
                                 }),
                             },
                             {

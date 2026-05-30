@@ -77,7 +77,7 @@ export const SignupResponseSchema = z.object({
 export type SignupResponseDto = z.infer<typeof SignupResponseSchema>;
 
 /** Unit status on the visual map (matches backend {@code FloorUnitStatus}). */
-export const MapUnitStatusSchema = z.enum(['AVAILABLE', 'OCCUPIED']);
+export const MapUnitStatusSchema = z.enum(['AVAILABLE', 'BOOKED', 'OCCUPIED']);
 
 export type MapUnitStatus = z.infer<typeof MapUnitStatusSchema>;
 
@@ -112,6 +112,7 @@ export const UnitMapUnitSchema = z.object({
     yPct: z.number(),
     wPct: z.number(),
     hPct: z.number(),
+    bookingRequirements: z.array(z.string()).default([]),
 });
 
 /** {@code GET /api/v1/floors/{floorId}/map} success body. */

@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { FloorMap } from '@/components/visual-map/FloorMap';
 import { resolveFloorPlanImageUrl } from '@/components/visual-map/resolveFloorPlanUrl';
 import { UnitInfoPanel } from '@/components/visual-map/UnitInfoPanel';
 import Skeleton from '@/components/Skeleton';
 import { useFloorMap } from '@/hooks/useFloorMap';
+import { useAppSelector } from '@/hooks/useAppStore';
+import { showError, showSuccess } from '@/lib/toast';
+import { useCreateApplication } from '@/queries/application.queries';
 
 function FloorMapPageSkeleton() {
     return (
@@ -56,7 +59,11 @@ type FloorMapPageBodyProps = {
  */
 function FloorMapPageBody({ floorId }: FloorMapPageBodyProps) {
     const navigate = useNavigate();
+    const location = useLocation();
     const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
+    const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
+    const user = useAppSelector((s) => s.auth.user);
+    const createApplication = useCreateApplication();
 
     const { data, isPending, isError, error, refetch, isFetching } = useFloorMap(floorId);
 
@@ -71,6 +78,32 @@ function FloorMapPageBody({ floorId }: FloorMapPageBodyProps) {
     );
 
     const floorLabel = data?.floorLabel ?? 'Floor map';
+
+    const handleBookingRequest = async (coverNote?: string, applicantData?: string) => {
+        if (!selectedUnit) {
+            return;
+        }
+        if (!isAuthenticated) {
+            navigate('/login', { state: { from: location }, replace: false });
+            return;
+        }
+        if (user?.role !== 'tenant') {
+            showError('Only tenant accounts can request a booking.');
+            return;
+        }
+        try {
+            await createApplication.mutateAsync({
+                floorUnitId: selectedUnit.unitId,
+                ...(coverNote ? { coverNote } : {}),
+                ...(applicantData ? { applicantData } : {}),
+            });
+            showSuccess('Booking request sent to the owner.');
+            setSelectedUnitId(null);
+            void refetch();
+        } catch (e) {
+            showError(e instanceof Error ? e.message : 'Could not submit booking request');
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-50 pb-20 pt-30">
@@ -160,7 +193,10 @@ function FloorMapPageBody({ floorId }: FloorMapPageBodyProps) {
                             <UnitInfoPanel
                                 unit={selectedUnit}
                                 floorLabel={data.floorLabel}
-                                onEnquire={() => navigate('/marketplace')}
+                                onEnquire={(coverNote, applicantData) =>
+                                    void handleBookingRequest(coverNote, applicantData)
+                                }
+                                isSubmitting={createApplication.isPending}
                             />
                         </div>
                     </div>
