@@ -226,6 +226,12 @@ const router = createBrowserRouter([
                                 }),
                             },
                             {
+                                path: 'maintenance',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/MaintenanceQueue')).default,
+                                }),
+                            },
+                            {
                                 path: 'finances',
                                 lazy: async () => ({
                                     Component: (await import('./pages/owner/FinancialReports')).default,
@@ -293,6 +299,12 @@ const router = createBrowserRouter([
                                 path: 'applications/:applicationId',
                                 lazy: async () => ({
                                     Component: (await import('./pages/owner/ApplicationDetail')).default,
+                                }),
+                            },
+                            {
+                                path: 'maintenance',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/MaintenanceQueue')).default,
                                 }),
                             },
                             {

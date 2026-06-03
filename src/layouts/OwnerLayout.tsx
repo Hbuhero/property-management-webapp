@@ -7,6 +7,7 @@ import {
     FileText,
     LayoutGrid,
     ShoppingBag,
+    Wrench,
 } from 'lucide-react';
 import { SidebarUserBlock } from '@/components/dashboard/SidebarUserBlock';
 
@@ -34,6 +35,7 @@ const OwnerLayout = () => {
         { name: 'Properties', path: `${base}/properties`, icon: Building, match: 'prefix' },
         { name: 'Floor plans', path: `${base}/visual-map`, icon: LayoutGrid, match: 'prefix' },
         { name: 'Applications', path: `${base}/applications`, icon: FileText, match: 'exact' },
+        { name: 'Maintenance', path: `${base}/maintenance`, icon: Wrench, match: 'exact' },
         { name: 'Finances', path: `${base}/finances`, icon: Wallet, match: 'prefix' },
         { name: 'Marketplace', path: '/marketplace', icon: ShoppingBag, match: 'exact', external: true },
     ];
