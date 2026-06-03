@@ -2,6 +2,7 @@ import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
     LayoutDashboard, CreditCard, Wrench, FileText
 } from 'lucide-react';
+import { SidebarUserBlock } from '@/components/dashboard/SidebarUserBlock';
 
 const TenantLayout = () => {
     const location = useLocation();
@@ -15,19 +16,9 @@ const TenantLayout = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex transition-colors duration-200">
-            {/* Sidebar */}
             <aside className="w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col shrink-0">
-                <div className="p-6 flex-1">
-                    <div className="flex items-center gap-3 mb-10">
-                        <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-bold text-sm shrink-0">
-                            AM
-                        </div>
-                        <div>
-                            <p className="text-sm font-bold text-slate-900 dark:text-white">Amani Mussa</p>
-                            <p className="text-xs text-slate-400">Tenant</p>
-                        </div>
-                    </div>
-                    <nav className="space-y-1">
+                <div className="p-6 flex flex-col flex-1 min-h-0">
+                    <nav className="space-y-1 flex-1">
                         {navItems.map((item) => {
                             const Icon = item.icon;
                             const isActive =
@@ -49,6 +40,7 @@ const TenantLayout = () => {
                             );
                         })}
                     </nav>
+                    <SidebarUserBlock roleLabel="Tenant" />
                 </div>
             </aside>
 

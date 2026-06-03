@@ -2,12 +2,10 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
     ArrowLeft,
-    ArrowRight,
     CalendarClock,
     CalendarDays,
     CheckCircle2,
     ChevronDown,
-    ChevronUp,
     CircleCheck,
     FileText,
     Home,
@@ -86,10 +84,6 @@ function formatMonthYear(value: string | null | undefined): string {
         month: 'short',
         year: 'numeric',
     }).format(d);
-}
-
-function todayIso(): string {
-    return new Date().toISOString().slice(0, 10);
 }
 
 function statusPillClass(status: ApplicationStatus | LeaseContract['status'] | 'NONE'): string {
@@ -296,13 +290,6 @@ function leaseItemScheduleGroups(contract: LeaseContract): LeaseItemScheduleGrou
     });
 }
 
-function nextPaymentText(entries: ScheduleEntry[]): string {
-    if (entries.length === 0) return 'No scheduled payment yet';
-    const today = todayIso();
-    const next = entries.find((entry) => entry.date >= today) ?? entries[0];
-    return `Next payment due ${formatDate(next.date)}`;
-}
-
 function ContractSchedule({ contract }: { contract: LeaseContract | undefined }) {
     const [showFullSchedule, setShowFullSchedule] = useState(false);
 
@@ -315,8 +302,6 @@ function ContractSchedule({ contract }: { contract: LeaseContract | undefined })
     }
 
     const scheduleGroups = leaseItemScheduleGroups(contract);
-    const scheduleEntries = scheduleGroups.flatMap((group) => group.entries).sort((a, b) => a.date.localeCompare(b.date));
-    const hasExpandableSchedule = scheduleGroups.some((group) => group.entries.length > 3);
     const scheduleRange = `${formatMonthYear(contract.startDate)} - ${formatMonthYear(contract.endDate)}`;
 
     return (

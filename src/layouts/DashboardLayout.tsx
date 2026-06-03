@@ -1,29 +1,18 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { LogOut, User, Building2 } from 'lucide-react';
 import { useState } from 'react';
-import { useAppSelector, useAppDispatch } from '@/hooks/useAppStore';
-import { logout } from '@/store/slices/authSlice';
+import { useAppSelector } from '@/hooks/useAppStore';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
-import { showSuccess } from '@/lib/toast';
+import { useLogout } from '@/hooks/useLogout';
+import { UserAvatar } from '@/components/UserAvatar';
 
 export function DashboardLayout() {
-    const dispatch = useAppDispatch();
-    const navigate = useNavigate();
     const { t } = useTranslation();
     const user = useAppSelector((state) => state.auth.user);
     const [menuOpen, setMenuOpen] = useState(false);
-
-    const handleLogout = () => {
-        dispatch(logout());
-        showSuccess(t('auth.logoutSuccess'));
-        navigate('/login');
-    };
-
-    const initials = user?.name
-        ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase()
-        : 'U';
+    const handleLogout = useLogout();
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col transition-colors duration-200">
@@ -49,9 +38,13 @@ export function DashboardLayout() {
                             onClick={() => setMenuOpen((o) => !o)}
                             className="flex items-center gap-0 sm:gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-1 sm:pr-3 rounded-full transition-colors"
                         >
-                            <div className="h-8 w-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                                {initials}
-                            </div>
+                            {user ? (
+                                <UserAvatar user={user} className="h-8 w-8" />
+                            ) : (
+                                <div className="h-8 w-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                                    U
+                                </div>
+                            )}
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-200 hidden sm:block">
                                 {user?.name || 'User'}
                             </span>

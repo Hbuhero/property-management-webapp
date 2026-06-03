@@ -8,7 +8,7 @@ import {
     LayoutGrid,
     ShoppingBag,
 } from 'lucide-react';
-import { useAppSelector } from '@/hooks/useAppStore';
+import { SidebarUserBlock } from '@/components/dashboard/SidebarUserBlock';
 
 type NavItem = {
     name: string;
@@ -28,7 +28,6 @@ function navActive(pathname: string, itemPath: string, mode: 'exact' | 'prefix')
 const OwnerLayout = () => {
     const location = useLocation();
     const base = location.pathname.startsWith('/landlord') ? '/landlord' : '/owner';
-    const user = useAppSelector((s) => s.auth.user);
 
     const navItems: NavItem[] = [
         { name: 'Overview', path: base, icon: BarChart3, match: 'exact' },
@@ -39,24 +38,11 @@ const OwnerLayout = () => {
         { name: 'Marketplace', path: '/marketplace', icon: ShoppingBag, match: 'exact', external: true },
     ];
 
-    const initial = user?.name?.trim()?.split(/\s+/)?.map((w) => w[0])?.slice(0, 2)?.join('') ?? 'PM';
-
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex transition-colors duration-200">
             <aside className="w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col shrink-0">
-                <div className="p-6 flex-1">
-                    <div className="flex items-center gap-3 mb-10">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
-                            {initial.toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                                {user?.name ?? 'Landlord'}
-                            </p>
-                            <p className="text-xs text-slate-400 truncate">{user?.email ?? ''}</p>
-                        </div>
-                    </div>
-                    <nav className="space-y-1">
+                <div className="p-6 flex flex-col flex-1 min-h-0">
+                    <nav className="space-y-1 flex-1">
                         {navItems.map((item) => {
                             const Icon = item.icon;
                             const active = navActive(location.pathname, item.path, item.match);
@@ -89,6 +75,7 @@ const OwnerLayout = () => {
                             );
                         })}
                     </nav>
+                    <SidebarUserBlock roleLabel="Landlord" />
                 </div>
             </aside>
 
