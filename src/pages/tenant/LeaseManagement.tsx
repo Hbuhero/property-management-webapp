@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { TenantActiveTenancyPanel } from '@/components/invoices/TenantActiveTenancyPanel';
+import { RequestInvoiceDialog } from '@/components/invoices/RequestInvoiceDialog';
 import {
     CheckCircle2,
     ChevronDown,
@@ -140,6 +142,7 @@ function canWithdraw(app: PropertyApplication): boolean {
 
 const LeaseManagement = () => {
     const [filter, setFilter] = useState<ApplicationStatus | 'ALL'>('ALL');
+    const [requestInvoiceOpen, setRequestInvoiceOpen] = useState(false);
     const status = filter === 'ALL' ? undefined : filter;
     const appsQuery = useApplications(status);
     const contractsQuery = useLeaseContracts();
@@ -230,6 +233,20 @@ const LeaseManagement = () => {
                     </div>
                 </div>
             </section>
+
+            {activeContract ? (
+                <>
+                    <TenantActiveTenancyPanel
+                        contract={activeContract}
+                        onRequestInvoice={() => setRequestInvoiceOpen(true)}
+                    />
+                    <RequestInvoiceDialog
+                        leaseContractId={activeContract.id}
+                        open={requestInvoiceOpen}
+                        onOpenChange={setRequestInvoiceOpen}
+                    />
+                </>
+            ) : null}
 
             <section className="rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
                 <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">

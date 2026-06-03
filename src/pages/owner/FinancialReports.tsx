@@ -1,9 +1,24 @@
-import { ArrowDown } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid,
-    Tooltip, ResponsiveContainer
+    Bar,
+    BarChart,
+    CartesianGrid,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
 } from 'recharts';
+import { Button } from '@/components/ui/button';
+import { formatInvoiceDate, formatInvoiceMoney } from '@/components/invoices/invoiceFormat';
+import { InvoiceListWithDetail } from '@/components/invoices/InvoiceListWithDetail';
+import { MarkPaidConfirmDialog } from '@/components/invoices/MarkPaidConfirmDialog';
+import { OwnerFinancesNav } from '@/components/invoices/OwnerFinancesNav';
+import { paidRevenueByMonth, sumPaidInvoiceAmount } from '@/lib/invoiceAnalytics';
+import { sumPendingInvoiceAmount } from '@/lib/tenantBilling';
+import { useInvoices } from '@/queries/invoice.queries';
+import type { Invoice } from '@/schemas/invoice.schema';
 
 const fadeUp = {
     initial: { opacity: 0, y: 16 },
@@ -11,66 +26,198 @@ const fadeUp = {
     transition: { duration: 0.35, ease: 'easeOut' as const },
 };
 
-const data = [
-    { name: 'Jan', revenue: 4500000 },
-    { name: 'Feb', revenue: 5200000 },
-    { name: 'Mar', revenue: 4800000 },
-    { name: 'Apr', revenue: 6100000 },
-    { name: 'May', revenue: 5500000 },
-    { name: 'Jun', revenue: 6700000 },
-];
+const FinancialReports = () => {
+    const location = useLocation();
+    const base = location.pathname.startsWith('/landlord') ? '/landlord' : '/owner';
+    const [searchParams] = useSearchParams();
+    const contractFilter = searchParams.get('leaseContractId');
+    const leaseContractId = contractFilter ? Number(contractFilter) : undefined;
+    const filters =
+        leaseContractId != null && Number.isFinite(leaseContractId)
+            ? { leaseContractId }
+            : undefined;
 
-const FinancialReports = () => (
-    <motion.div {...fadeUp} className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Financial Reports</h1>
-            <button className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-                <ArrowDown className="h-4 w-4" /> Export Statement
-            </button>
-        </div>
+    const allQuery = useInvoices();
+    const pendingQuery = useInvoices({ status: 'PENDING', ...filters });
+    const paidQuery = useInvoices({ status: 'PAID', ...filters });
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Chart */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl">
-                <h3 className="font-semibold text-slate-900 dark:text-white mb-5">Revenue vs Expenses</h3>
-                <div className="h-[260px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={data}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                            <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgb(0 0 0 / 0.1)' }} />
-                            <Bar dataKey="revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
+    const [markPaidInvoice, setMarkPaidInvoice] = useState<Invoice | null>(null);
+
+    const allInvoices = allQuery.data ?? [];
+    const pending = useMemo(() => pendingQuery.data ?? [], [pendingQuery.data]);
+    const paid = useMemo(() => paidQuery.data ?? [], [paidQuery.data]);
+
+    const chartData = useMemo(() => paidRevenueByMonth(paid), [paid]);
+    const totalPaid = sumPaidInvoiceAmount(paid);
+    const totalOutstanding = sumPendingInvoiceAmount(pending);
+    const currency = allInvoices[0]?.currency ?? 'TZS';
+
+    return (
+        <motion.div {...fadeUp} className="space-y-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Financial reports</h1>
+                    <p className="mt-1 text-sm text-slate-500">
+                        Revenue from paid invoices and outstanding tenant balances.
+                    </p>
+                </div>
+                <OwnerFinancesNav />
+            </div>
+
+            {leaseContractId != null && Number.isFinite(leaseContractId) ? (
+                <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                    Filtered to lease #{leaseContractId}.{' '}
+                    <Link to={`${base}/finances`} className="font-semibold text-emerald-600 hover:underline">
+                        Clear filter
+                    </Link>
+                </p>
+            ) : null}
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+                    <p className="text-xs font-semibold uppercase text-slate-500">Collected (paid)</p>
+                    <p className="mt-2 text-2xl font-bold text-emerald-600">
+                        {paidQuery.isPending ? '…' : formatInvoiceMoney(totalPaid, currency)}
+                    </p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+                    <p className="text-xs font-semibold uppercase text-slate-500">Outstanding</p>
+                    <p className="mt-2 text-2xl font-bold text-amber-600">
+                        {pendingQuery.isPending ? '…' : formatInvoiceMoney(totalOutstanding, currency)}
+                    </p>
                 </div>
             </div>
 
-            {/* Outstanding balances */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl">
-                <h3 className="font-semibold text-slate-900 dark:text-white mb-5">Outstanding Balances</h3>
-                <div className="space-y-3">
-                    {[
-                        { tenant: 'Amani Mussa', amount: '1,800,000 TZS', days: '5 days late' },
-                        { tenant: 'Joyce Massawe', amount: '450,000 TZS', days: '2 days late' },
-                    ].map((item, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl">
-                            <div>
-                                <p className="font-semibold text-sm text-slate-900 dark:text-white">{item.tenant}</p>
-                                <p className="text-xs text-red-600 dark:text-red-400 font-medium">{item.days}</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="font-bold text-sm text-slate-900 dark:text-white">{item.amount}</p>
-                                <button className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline mt-0.5">
-                                    SEND REMINDER
-                                </button>
-                            </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+                    <h3 className="mb-5 font-semibold text-slate-900 dark:text-white">Paid revenue by month</h3>
+                    <div className="h-[260px]">
+                        {chartData.length === 0 ? (
+                            <p className="flex h-full items-center justify-center text-sm text-slate-500">
+                                No paid invoices in the selected period yet.
+                            </p>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis
+                                        dataKey="name"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                    />
+                                    <Tooltip
+                                        formatter={(value) =>
+                                            formatInvoiceMoney(
+                                                typeof value === 'number' ? value : Number(value),
+                                                currency,
+                                            )
+                                        }
+                                        contentStyle={{
+                                            borderRadius: '12px',
+                                            border: 'none',
+                                            boxShadow: '0 4px 20px rgb(0 0 0 / 0.1)',
+                                        }}
+                                    />
+                                    <Bar dataKey="revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
+                    </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+                    <h3 className="mb-5 font-semibold text-slate-900 dark:text-white">Outstanding balances</h3>
+                    {pendingQuery.isError ? (
+                        <p className="text-sm text-red-600">
+                            {pendingQuery.error instanceof Error
+                                ? pendingQuery.error.message
+                                : 'Could not load outstanding invoices'}
+                        </p>
+                    ) : pending.length === 0 ? (
+                        <p className="text-sm text-slate-500">No pending invoices right now.</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {pending.slice(0, 6).map((invoice) => (
+                                <div
+                                    key={invoice.id}
+                                    className="flex items-center justify-between rounded-xl border border-red-100 bg-red-50 p-4 dark:border-red-900/30 dark:bg-red-900/10"
+                                >
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                                            {invoice.contract?.tenantName ?? 'Tenant'}
+                                        </p>
+                                        <p className="text-xs text-red-600 dark:text-red-400">
+                                            Due {formatInvoiceDate(invoice.dueDate)} · {invoice.paymentMethod}
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                            {formatInvoiceMoney(invoice.amount, invoice.currency)}
+                                        </p>
+                                        <Button
+                                            type="button"
+                                            variant="link"
+                                            className="h-auto p-0 text-[10px] font-bold text-emerald-600"
+                                            onClick={() => setMarkPaidInvoice(invoice)}
+                                        >
+                                            MARK PAID
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
-        </div>
-    </motion.div>
-);
+
+            <section className="rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                <div className="border-b border-slate-200 p-4 dark:border-slate-800">
+                    <h2 className="font-semibold text-slate-950 dark:text-white">All pending invoices</h2>
+                    <p className="text-sm text-slate-500">Confirm cash payments received from tenants.</p>
+                </div>
+                <div className="p-4">
+                    <InvoiceListWithDetail
+                        invoices={pending}
+                        isLoading={pendingQuery.isPending}
+                        emptyMessage="No outstanding invoices."
+                        renderActions={(invoice) => (
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setMarkPaidInvoice(invoice)}
+                            >
+                                Mark paid
+                            </Button>
+                        )}
+                        renderDetailActions={(invoice) => (
+                            <Button
+                                type="button"
+                                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                onClick={() => setMarkPaidInvoice(invoice)}
+                            >
+                                Mark as paid
+                            </Button>
+                        )}
+                    />
+                </div>
+            </section>
+
+            <MarkPaidConfirmDialog
+                invoice={markPaidInvoice}
+                open={markPaidInvoice != null}
+                onOpenChange={(open) => {
+                    if (!open) setMarkPaidInvoice(null);
+                }}
+            />
+        </motion.div>
+    );
+};
 
 export default FinancialReports;

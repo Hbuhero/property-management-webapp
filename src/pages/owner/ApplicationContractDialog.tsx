@@ -30,6 +30,14 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { fetchLeasePreset } from '@/api/leasePresetApi';
+import {
+    addTimelineUnits,
+    buildDraftItemScheduleEntries,
+    nextDueEntry,
+    type ScheduleEntry,
+    type ScheduleItemInput,
+    todayIso,
+} from '@/lib/leaseSchedule';
 import { showError, showSuccess } from '@/lib/toast';
 import { useApproveApplication } from '@/queries/application.queries';
 import {
@@ -63,14 +71,6 @@ type ContractDialogState = {
     terms: string;
     items: LeaseItemDraft[];
     confirmed: boolean;
-};
-
-type ScheduleEntry = {
-    key: string;
-    label: string;
-    date: string;
-    amount: number | undefined;
-    muted?: boolean;
 };
 
 type LeaseItemScheduleGroup = {
@@ -131,10 +131,6 @@ function formatMonthYear(value: string | null | undefined): string {
     }).format(d);
 }
 
-function todayIso(): string {
-    return new Date().toISOString().slice(0, 10);
-}
-
 function oneYearEndIso(): string {
     const d = new Date();
     d.setFullYear(d.getFullYear() + 1);
@@ -185,45 +181,6 @@ function numberFromField(value: string): number | undefined {
     return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function addTimelineUnits(startIso: string, timeFrame: LeaseTimeFrameValue, count: number): string | null {
-    const d = new Date(`${startIso}T00:00:00`);
-    if (Number.isNaN(d.getTime())) return null;
-    switch (timeFrame) {
-        case 'DAY':
-            d.setDate(d.getDate() + count);
-            break;
-        case 'MONTH':
-            d.setMonth(d.getMonth() + count);
-            break;
-        case 'YEAR':
-            d.setFullYear(d.getFullYear() + count);
-            break;
-        case 'NONE':
-            return startIso;
-    }
-    d.setDate(d.getDate() - 1);
-    return d.toISOString().slice(0, 10);
-}
-
-function addTimelineOffset(startIso: string, timeFrame: LeaseTimeFrameValue, offset: number): string | null {
-    const d = new Date(`${startIso}T00:00:00`);
-    if (Number.isNaN(d.getTime())) return null;
-    switch (timeFrame) {
-        case 'DAY':
-            d.setDate(d.getDate() + offset);
-            break;
-        case 'MONTH':
-            d.setMonth(d.getMonth() + offset);
-            break;
-        case 'YEAR':
-            d.setFullYear(d.getFullYear() + offset);
-            break;
-        case 'NONE':
-            return startIso;
-    }
-    return d.toISOString().slice(0, 10);
-}
-
 export function itemEndDate(item: LeaseItemDraft): string | null {
     if (!item.startDate) return null;
     if (item.leaseType !== 'RECURRING') return item.startDate;
@@ -262,41 +219,36 @@ function leaseDurationLabel(startDate: string, endDate: string): string {
     return `${days} day${days === 1 ? '' : 's'}`;
 }
 
-function paymentScheduleEntries(items: LeaseItemDraft[]): ScheduleEntry[] {
+function draftScheduleInput(item: LeaseItemDraft): ScheduleItemInput {
+    return {
+        label: item.label,
+        amount: numberFromField(item.amount),
+        leaseType: item.leaseType,
+        timeFrame: item.timeFrame,
+        recurringNumber: numberFromField(item.recurringNumber),
+        startDate: item.startDate,
+    };
+}
+
+function paymentScheduleEntries(
+    items: LeaseItemDraft[],
+    paymentDayOfMonth: number,
+    contractId?: number,
+): ScheduleEntry[] {
     return items
-        .flatMap((item) => leaseItemScheduleEntries(item))
+        .flatMap((item) =>
+            buildDraftItemScheduleEntries(draftScheduleInput(item), item.key, {
+                paymentDayOfMonth,
+                contractId,
+            }),
+        )
         .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function nextPaymentText(entries: ScheduleEntry[]): string {
-    if (entries.length === 0) return 'No scheduled payment yet';
-    const today = todayIso();
-    const next = entries.find((entry) => entry.date >= today) ?? entries[0];
+    const next = nextDueEntry(entries);
+    if (!next) return 'No scheduled payment yet';
     return `Next payment due ${formatDate(next.date)}`;
-}
-
-function leaseItemScheduleEntries(item: LeaseItemDraft): ScheduleEntry[] {
-    const amount = numberFromField(item.amount);
-    if (!item.startDate || amount == null || amount <= 0) return [];
-    if (item.leaseType !== 'RECURRING') {
-        return [
-            {
-                key: `${item.key}-once`,
-                label: item.label || 'One-time charge',
-                date: item.startDate,
-                amount,
-            },
-        ];
-    }
-    const count = numberFromField(item.recurringNumber);
-    if (!count || count < 1 || !Number.isInteger(count) || item.timeFrame === 'NONE') return [];
-    return Array.from({ length: count }, (_, idx) => ({
-        key: `${item.key}-${idx}`,
-        label: count === 1 ? item.label || 'Recurring charge' : `${item.label || 'Recurring charge'} ${idx + 1}`,
-        date: addTimelineOffset(item.startDate, item.timeFrame, idx) ?? item.startDate,
-        amount,
-        muted: idx > 0,
-    }));
 }
 
 function timeFrameLabel(timeFrame: LeaseTimeFrameValue): string {
@@ -327,10 +279,17 @@ function itemScheduleSummary(item: LeaseItemDraft, entries: ScheduleEntry[]): st
     return `${timeFrameLabel(item.timeFrame)} billing from ${formatDate(item.startDate)} to ${formatDate(endDate)}.`;
 }
 
-function leaseItemScheduleGroups(items: LeaseItemDraft[]): LeaseItemScheduleGroup[] {
+function leaseItemScheduleGroups(
+    items: LeaseItemDraft[],
+    paymentDayOfMonth: number,
+    contractId?: number,
+): LeaseItemScheduleGroup[] {
     return items
         .map((item) => {
-            const entries = leaseItemScheduleEntries(item).sort((a, b) => a.date.localeCompare(b.date));
+            const entries = buildDraftItemScheduleEntries(draftScheduleInput(item), item.key, {
+                paymentDayOfMonth,
+                contractId,
+            }).sort((a, b) => a.date.localeCompare(b.date));
             return {
                 item,
                 entries,
@@ -603,8 +562,13 @@ export function ApplicationContractDialog({
         }
     };
 
-    const scheduleEntries = state ? paymentScheduleEntries(state.items) : [];
-    const scheduleGroups = state ? leaseItemScheduleGroups(state.items) : [];
+    const paymentDay = state ? Number(state.paymentDayOfMonth) : 1;
+    const scheduleEntries = state
+        ? paymentScheduleEntries(state.items, paymentDay, state.contract?.id)
+        : [];
+    const scheduleGroups = state
+        ? leaseItemScheduleGroups(state.items, paymentDay, state.contract?.id)
+        : [];
     const hasExpandableSchedule = scheduleGroups.some((group) => group.entries.length > 3);
     const totalValue = state ? totalContractValue(state.items) : undefined;
     const monthlyRent = state?.app.unit.monthlyRent;

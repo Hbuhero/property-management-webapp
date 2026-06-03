@@ -231,6 +231,12 @@ const router = createBrowserRouter([
                                     Component: (await import('./pages/owner/FinancialReports')).default,
                                 }),
                             },
+                            {
+                                path: 'finances/active-leases',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/ActiveLeases')).default,
+                                }),
+                            },
                         ],
                     },
                 ],
@@ -293,6 +299,12 @@ const router = createBrowserRouter([
                                 path: 'finances',
                                 lazy: async () => ({
                                     Component: (await import('./pages/owner/FinancialReports')).default,
+                                }),
+                            },
+                            {
+                                path: 'finances/active-leases',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/ActiveLeases')).default,
                                 }),
                             },
                         ],
