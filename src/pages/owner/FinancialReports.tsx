@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { PageBackLink } from '@/components/dashboard/PageBackLink';
 import {
     Bar,
     BarChart,
@@ -54,6 +55,9 @@ const FinancialReports = () => {
 
     return (
         <motion.div {...fadeUp} className="space-y-6">
+            {leaseContractId != null && Number.isFinite(leaseContractId) ? (
+                <PageBackLink to={`${base}/finances`} label="Back to all reports" />
+            ) : null}
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Financial reports</h1>

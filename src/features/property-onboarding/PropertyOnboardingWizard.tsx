@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { PageBackLink } from '@/components/dashboard/PageBackLink';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, LayoutGrid, Layers, MapPin, Building2, Plus, Trash2, ImagePlus, Star } from 'lucide-react';
 import {
@@ -400,6 +401,7 @@ export default function PropertyOnboardingWizard() {
 
     return (
         <div className="mx-auto max-w-3xl space-y-8 pb-12">
+            <PageBackLink to={`${base}/properties`} label="Back to inventory" />
             {headerTitle}
             <StepIndicator step={step} />
 

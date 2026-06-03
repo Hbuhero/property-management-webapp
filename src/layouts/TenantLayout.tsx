@@ -1,7 +1,8 @@
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
-    LayoutDashboard, CreditCard, Wrench, FileText
+    LayoutDashboard, CreditCard, Wrench, FileText, ShoppingBag,
 } from 'lucide-react';
+import { DashboardPublicBar } from '@/components/dashboard/DashboardPublicBar';
 import { SidebarUserBlock } from '@/components/dashboard/SidebarUserBlock';
 
 const TenantLayout = () => {
@@ -12,6 +13,7 @@ const TenantLayout = () => {
         { name: 'Lease', path: '/tenant/lease', icon: FileText },
         { name: 'Payments', path: '/tenant/payments', icon: CreditCard },
         { name: 'Maintenance', path: '/tenant/maintenance', icon: Wrench },
+        { name: 'Marketplace', path: '/marketplace', icon: ShoppingBag, external: true },
     ];
 
     return (
@@ -22,18 +24,28 @@ const TenantLayout = () => {
                         {navItems.map((item) => {
                             const Icon = item.icon;
                             const isActive =
-                                item.path === '/tenant'
+                                !item.external &&
+                                (item.path === '/tenant'
                                     ? location.pathname === '/tenant'
-                                    : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+                                    : location.pathname === item.path ||
+                                      location.pathname.startsWith(`${item.path}/`));
+                            const cls = `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+                                isActive
+                                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
+                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                            }`;
+
+                            if (item.external) {
+                                return (
+                                    <Link key={item.path} to={item.path} className={cls}>
+                                        <Icon className="h-4 w-4 shrink-0" />
+                                        {item.name}
+                                    </Link>
+                                );
+                            }
+
                             return (
-                                <Link
-                                    key={item.path}
-                                    to={item.path}
-                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${isActive
-                                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
-                                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                                        }`}
-                                >
+                                <Link key={item.path} to={item.path} className={cls}>
                                     <Icon className="h-4 w-4 shrink-0" />
                                     {item.name}
                                 </Link>
@@ -45,6 +57,7 @@ const TenantLayout = () => {
             </aside>
 
             <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+                <DashboardPublicBar />
                 <Outlet />
             </main>
         </div>

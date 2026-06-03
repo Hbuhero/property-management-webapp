@@ -9,6 +9,7 @@ import {
     ShoppingBag,
     Wrench,
 } from 'lucide-react';
+import { DashboardPublicBar } from '@/components/dashboard/DashboardPublicBar';
 import { SidebarUserBlock } from '@/components/dashboard/SidebarUserBlock';
 
 type NavItem = {
@@ -56,13 +57,7 @@ const OwnerLayout = () => {
 
                             if (item.external) {
                                 return (
-                                    <Link
-                                        key={item.path}
-                                        to={item.path}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className={cls}
-                                    >
+                                    <Link key={item.path} to={item.path} className={cls}>
                                         <Icon className="h-4 w-4 shrink-0" />
                                         {item.name}
                                     </Link>
@@ -82,6 +77,7 @@ const OwnerLayout = () => {
             </aside>
 
             <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+                <DashboardPublicBar />
                 <Outlet />
             </main>
         </div>
