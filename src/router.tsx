@@ -226,9 +226,21 @@ const router = createBrowserRouter([
                                 }),
                             },
                             {
+                                path: 'maintenance',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/MaintenanceQueue')).default,
+                                }),
+                            },
+                            {
                                 path: 'finances',
                                 lazy: async () => ({
                                     Component: (await import('./pages/owner/FinancialReports')).default,
+                                }),
+                            },
+                            {
+                                path: 'finances/active-leases',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/ActiveLeases')).default,
                                 }),
                             },
                         ],
@@ -290,9 +302,21 @@ const router = createBrowserRouter([
                                 }),
                             },
                             {
+                                path: 'maintenance',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/MaintenanceQueue')).default,
+                                }),
+                            },
+                            {
                                 path: 'finances',
                                 lazy: async () => ({
                                     Component: (await import('./pages/owner/FinancialReports')).default,
+                                }),
+                            },
+                            {
+                                path: 'finances/active-leases',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/owner/ActiveLeases')).default,
                                 }),
                             },
                         ],

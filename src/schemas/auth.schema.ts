@@ -39,7 +39,7 @@ export const registerSchema = z
         password: z.string().min(6, 'Password must be at least 6 characters'),
         confirmPassword: z.string().min(1, 'Confirm your password'),
         role: selfRegistrationRoleSchema,
-        image: z.string().max(2000).optional(),
+        image: z.string().max(500).optional(),
     })
     .refine((data) => data.password === data.confirmPassword, {
         message: 'Passwords do not match',

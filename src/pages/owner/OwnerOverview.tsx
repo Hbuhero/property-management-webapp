@@ -150,12 +150,10 @@ const OwnerOverview = () => {
                     </Link>
                     <Link
                         to="/marketplace"
-                        target="_blank"
-                        rel="noreferrer"
                         className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:border-emerald-400 transition-colors"
                     >
                         <ShoppingBag className="h-5 w-5 text-emerald-600 shrink-0" aria-hidden />
-                        Public marketplace (new tab)
+                        Browse marketplace
                     </Link>
                     <Link
                         to={`${base}/properties`}

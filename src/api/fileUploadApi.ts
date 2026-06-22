@@ -14,6 +14,24 @@ function parseUploadPathBody(text: string): string {
     return t;
 }
 
+/** Multipart upload without auth (e.g. signup avatar). Returns stored path {@code /file/...}. */
+export async function uploadPublicImage(file: File): Promise<string> {
+    const fd = new FormData();
+    fd.append('file', file);
+
+    const url = `${getApiBaseUrl()}${API_V1_PREFIX}/file/upload/multipart`;
+    const res = await fetch(url, {
+        method: 'POST',
+        body: fd,
+    });
+
+    const raw = await res.text();
+    if (!res.ok) {
+        throw new Error(raw || `Upload failed (${res.status})`);
+    }
+    return parseUploadPathBody(raw);
+}
+
 /** Multipart upload — returns stored web path (e.g. {@code /file/<uuid>.jpg}). */
 export async function uploadListingImage(file: File): Promise<string> {
     const fd = new FormData();

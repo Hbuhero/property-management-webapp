@@ -1,57 +1,109 @@
 # Feature 6 — Maintenance management
 
-Tenants submit maintenance requests; property owners or staff update status.
+Tenants submit maintenance requests for leased units; property owners (`LAND_LORD`) update status.
+
+**Current state:** Backend has no maintenance module. Frontend has `/tenant/maintenance` → `MaintenancePortal.tsx` (hardcoded mock data only).
 
 ## Goals
 
-- `MaintenanceRequest` with lifecycle statuses
-- POST/GET/PUT with tenant vs owner scoping
+- `MaintenanceRequest` entity with lifecycle statuses
+- `POST` / `GET` / `GET /{id}` / `PUT` scoped by tenant vs owner (reuse `canManage(property, principal)` pattern from `LeaseContractService`)
+- Wire tenant portal and add owner queue UI
 
 ## Backend steps
 
-1. **Entity**  
-   `MaintenanceRequest`: `id`, `tenant`, `property`, `title` or single `description`, `status` (`SUBMITTED`, `IN_PROGRESS`, `RESOLVED`), optional `resolutionNotes`, timestamps.
+Package root: `dev.hud.PropertyManagementSystem`
 
-2. **Authorization**  
-   - Tenant creates for properties they lease (active lease) or any rented unit per your rule set.  
-   - Owner sees requests for owned properties.  
-   - Tenant sees own requests.
+1. **Models** — `models/maintenance/`
+   - Enums: `MaintenanceCategory`, `MaintenancePriority`, `MaintenanceStatus` (see Data model)
+   - Entity: `MaintenanceRequest` **extends `BaseEntity`** (soft delete, `uuid`, audit fields — same as `PropertyApplication`, `LeaseContract`)
+   - FKs: `User tenant`, `Property property`, **`FloorUnit floorUnit`** (required — matches applications/leases), **`LeaseContract leaseContract`** (optional; set when tenant has `ACCEPTED` contract on that unit)
+   - Do **not** link to `Lease` — that entity is a property-level rent template, not tenant tenancy
 
-3. **Endpoints**  
-   - `POST /api/v1/maintenance`  
-   - `GET /api/v1/maintenance` — filters: `propertyId`, `status`, `tenantId` (admin)  
-   - `PUT /api/v1/maintenance/{id}` — owner/caretaker updates status and notes  
+2. **Payloads** — mirror application module
+   - `payloads/requests/maintenance/CreateMaintenanceRequest`, `UpdateMaintenanceRequest`
+   - `payloads/responses/maintenance/MaintenanceResponse` with nested `UserSummary`, `PropertySummary`, `UnitSummary` records (copy shape from `ApplicationResponse`)
 
-4. **Events**  
-   Optional: `MaintenanceStatusChangedEvent` for notifications (Feature 7).
+3. **Repository** — `repositories/maintenance/MaintenanceRequestRepository`
+   - Finders: by tenant, by property owner, by status/category/priority, `existsByTenantAndFloorUnitAndStatusIn(...)`
+
+4. **Service** — `services/maintenance/MaintenanceService`
+   - **Create (tenant):** `ROLE_TENANT`; require `LeaseContractStatus.ACCEPTED` contract for `floorUnitId`; derive `property` from unit
+   - **List:** tenant → own rows; `LAND_LORD` / admin → requests on owned properties (`property.owner.id == principal.id`); admin may filter `tenantId`
+   - **Get / update:** same read/manage rules as `ApplicationService` / `LeaseContractService.assertCanManage`
+   - **Update (owner/admin):** status transitions, `resolutionNotes`, set `resolvedAt` when status → `RESOLVED` or `CLOSED`
+   - **`assignedTo`:** defer — no `CARETAKER` role in `Role` enum today (`SUPER_ADMIN`, `ADMIN`, `USER`, `TENANT`, `LAND_LORD` only)
+   - **`imageUrls`:** store JSON string in DB; serialize/deserialize in service (no existing `imageUrls` pattern — follow `User.permissions` TEXT or Gson if needed)
+
+5. **Controller** — `controllers/maintenance/MaintenanceController`
+   - `@RequestMapping(Constants.API_V1 + "/maintenance")`
+   - `@PreAuthorize("isAuthenticated()")` — same as `ApplicationController`
+   - Extract principal via local `requirePrincipal(Authentication)` helper
+
+6. **Endpoints**
+
+   | Method | Path | Who |
+   |--------|------|-----|
+   | POST | `/api/v1/maintenance` | Tenant |
+   | GET | `/api/v1/maintenance` | Scoped list; query: `propertyId`, `floorUnitId`, `status`, `category`, `priority`, `tenantId` (admin) |
+   | GET | `/api/v1/maintenance/{id}` | Tenant (own) or owner (property) or admin |
+   | PUT | `/api/v1/maintenance/{id}` | Owner / admin |
+
+7. **Events (optional, Feature 7)**
+   - `MaintenanceStatusChangedEvent` → notification listener later; no event infra required for F6 MVP
+
+8. **Files to create**
+
+   ```
+   models/maintenance/{MaintenanceRequest,MaintenanceCategory,MaintenancePriority,MaintenanceStatus}.java
+   repositories/maintenance/MaintenanceRequestRepository.java
+   services/maintenance/MaintenanceService.java
+   controllers/maintenance/MaintenanceController.java
+   payloads/requests/maintenance/{Create,Update}MaintenanceRequest.java
+   payloads/responses/maintenance/MaintenanceResponse.java
+   ```
 
 ## Frontend steps
 
-1. **Queries**  
-   `src/queries/maintenance.queries.ts`.
+Follow the **application** module pattern: `schemas/` → `api/` → `queries/` → pages.
 
-2. **Tenant**  
-   `pages/tenant/MaintenancePortal.tsx`: form + list with status badges.
+1. **Schema** — `src/schemas/maintenance.schema.ts` (see Data model; align field names with `ApplicationSchema` summaries)
 
-3. **Owner**  
-   New route e.g. `/owner/maintenance` or section in dashboard: queue with filters, inline status update.
+2. **API** — `src/api/maintenanceApi.ts`
+   - `apiJson` + Zod `.parse()` via `API_V1_PREFIX` from `src/lib/contracts/preVisualMapContracts.ts`
 
-4. **Router**  
-   Add lazy route under `OwnerLayout` if new page.
+3. **Queries** — `src/queries/maintenance.queries.ts`
+   - `maintenanceKeys` factory; `useMaintenanceRequests`, `useMaintenanceRequest`, `useCreateMaintenance`, `useUpdateMaintenance`
+
+4. **Tenant** — refactor `src/pages/tenant/MaintenancePortal.tsx`
+   - Replace mock `tickets` array with React Query hooks
+   - Create form: `floorUnitId` (from tenant's accepted lease contracts), title, description, category, priority
+   - Photos: `uploadListingImage` from `src/api/fileUploadApi.ts`; display via `resolvePropertyImageUrl` from `src/lib/propertyMediaUrl.ts`
+   - Status badges from `MaintenanceStatus` enum
+
+5. **Owner** — new `src/pages/owner/MaintenanceQueue.tsx`
+   - Route: `${base}/maintenance` under **both** `/owner` and `/landlord` trees in `src/router.tsx` (same pattern as other owner pages)
+   - Add nav item in `src/layouts/OwnerLayout.tsx` (Wrench icon)
+   - Filter by property/status/priority; inline status update + resolution notes
+
+6. **Tenant overview (optional polish)** — `src/pages/tenant/TenantOverview.tsx` has mock maintenance stats; wire to `useMaintenanceRequests` after portal works
 
 ## API sketch
 
 | Method | Path | Notes |
 |--------|------|--------|
-| POST | `/api/v1/maintenance` | Tenant |
-| GET | `/api/v1/maintenance` | Scoped |
-| PUT | `/api/v1/maintenance/{id}` | Owner/Caretaker/Admin |
+| POST | `/api/v1/maintenance` | Body: `floorUnitId`, `title`, `description`, `category`, `priority`, optional `imageUrls[]`, optional `leaseContractId` |
+| GET | `/api/v1/maintenance` | Scoped; filters above |
+| GET | `/api/v1/maintenance/{id}` | Single row |
+| PUT | `/api/v1/maintenance/{id}` | Body: `status`, optional `resolutionNotes` |
 
 ## Acceptance criteria
 
-- [ ] Tenant submits request; appears in owner queue
-- [ ] Owner moves status to `RESOLVED`; tenant sees update
-- [ ] Cross-tenant data leakage prevented on list endpoints
+- [ ] Tenant with `ACCEPTED` `LeaseContract` submits request; appears in owner queue
+- [ ] Tenant without active contract on unit gets 403/400
+- [ ] Owner moves status through to `RESOLVED`; tenant sees update after refetch
+- [ ] Cross-tenant data leakage prevented on list and get-by-id
+- [ ] `PropertyStatus.MAINTENANCE` (listing flag) remains unrelated to maintenance tickets
 
 ## Data model
 
@@ -60,67 +112,48 @@ Tenants submit maintenance requests; property owners or staff update status.
 ```java
 // models/maintenance/MaintenanceCategory.java
 public enum MaintenanceCategory {
-    PLUMBING,    // leaks, pipes, drainage
-    ELECTRICAL,  // wiring, outlets, lighting
-    STRUCTURAL,  // walls, roof, doors, windows
-    APPLIANCE,   // fridge, AC, stove
-    PEST,        // pest control
-    CLEANING,    // deep cleaning, waste
-    SECURITY,    // locks, gates, CCTV
-    OTHER
+    PLUMBING, ELECTRICAL, STRUCTURAL, APPLIANCE,
+    PEST, CLEANING, SECURITY, OTHER
 }
 
 // models/maintenance/MaintenancePriority.java
 public enum MaintenancePriority {
-    LOW,    // cosmetic / non-urgent
-    MEDIUM, // noticeable, fix within a week
-    HIGH,   // affects daily living
-    URGENT  // safety risk / no water / no electricity
+    LOW, MEDIUM, HIGH, URGENT
 }
 
 // models/maintenance/MaintenanceStatus.java
 public enum MaintenanceStatus {
-    SUBMITTED,    // tenant just filed
-    UNDER_REVIEW, // owner/caretaker acknowledged
-    IN_PROGRESS,  // work started
-    RESOLVED,     // work done; tenant may confirm
-    CLOSED        // completed and confirmed / cancelled
+    SUBMITTED,
+    UNDER_REVIEW,
+    IN_PROGRESS,
+    RESOLVED,
+    CLOSED
 }
 ```
 
-### Java entity
+### Java entity (sketch)
 
 ```java
-// models/maintenance/MaintenanceRequest.java
-@Entity
-@Table(
-    name = "MAINTENANCE_REQUESTS",
-    indexes = {
-        @Index(name = "idx_maint_tenant",   columnList = "TENANT_ID"),
-        @Index(name = "idx_maint_property", columnList = "PROPERTY_ID"),
-        @Index(name = "idx_maint_status",   columnList = "STATUS"),
-        @Index(name = "idx_maint_priority", columnList = "PRIORITY")
-    }
-)
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
-public class MaintenanceRequest {
+@Entity(name = "MAINTENANCE_REQUEST")
+@Table(indexes = {
+    @Index(name = "IDX_MAINT_TENANT", columnList = "TENANT_ID"),
+    @Index(name = "IDX_MAINT_PROPERTY", columnList = "PROPERTY_ID"),
+    @Index(name = "IDX_MAINT_UNIT", columnList = "FLOOR_UNIT_ID"),
+    @Index(name = "IDX_MAINT_STATUS", columnList = "STATUS")
+})
+public class MaintenanceRequest extends BaseEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID")
-    private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "TENANT_ID", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "TENANT_ID", nullable = false)
     private User tenant;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "PROPERTY_ID", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "PROPERTY_ID", nullable = false)
     private Property property;
 
-    // Optional: link to the active lease for financial correlation
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "LEASE_ID")
-    private Lease lease;
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "FLOOR_UNIT_ID", nullable = false)
+    private FloorUnit floorUnit;
+
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "LEASE_CONTRACT_ID")
+    private LeaseContract leaseContract;
 
     @Column(name = "TITLE", nullable = false)
     private String title;
@@ -128,40 +161,23 @@ public class MaintenanceRequest {
     @Column(name = "DESCRIPTION", nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "CATEGORY", nullable = false)
+    @Enumerated(EnumType.STRING) @Column(name = "CATEGORY", nullable = false)
     private MaintenanceCategory category;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "PRIORITY", nullable = false)
+    @Enumerated(EnumType.STRING) @Column(name = "PRIORITY", nullable = false)
     private MaintenancePriority priority = MaintenancePriority.MEDIUM;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "STATUS", nullable = false)
+    @Enumerated(EnumType.STRING) @Column(name = "STATUS", nullable = false)
     private MaintenanceStatus status = MaintenanceStatus.SUBMITTED;
-
-    // Caretaker or external contractor
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ASSIGNED_TO")
-    private User assignedTo;
 
     @Column(name = "RESOLUTION_NOTES", columnDefinition = "TEXT")
     private String resolutionNotes;
 
-    // JSON array of uploaded photo paths (from FileService)
-    @Column(name = "IMAGE_URLS", columnDefinition = "TEXT")
+    @Column(name = "IMAGE_URLS", columnDefinition = "TEXT")  // JSON array of /file/... paths
     private String imageUrls;
 
     @Column(name = "RESOLVED_AT")
     private LocalDateTime resolvedAt;
-
-    @CreationTimestamp
-    @Column(name = "CREATED_AT", updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "UPDATED_AT")
-    private LocalDateTime updatedAt;
 }
 ```
 
@@ -173,40 +189,60 @@ import { z } from 'zod';
 
 export const MaintenanceCategorySchema = z.enum([
   'PLUMBING', 'ELECTRICAL', 'STRUCTURAL', 'APPLIANCE',
-  'PEST', 'CLEANING', 'SECURITY', 'OTHER'
+  'PEST', 'CLEANING', 'SECURITY', 'OTHER',
 ]);
 
-export const MaintenancePrioritySchema = z.enum([
-  'LOW', 'MEDIUM', 'HIGH', 'URGENT'
-]);
+export const MaintenancePrioritySchema = z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']);
 
 export const MaintenanceStatusSchema = z.enum([
-  'SUBMITTED', 'UNDER_REVIEW', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
+  'SUBMITTED', 'UNDER_REVIEW', 'IN_PROGRESS', 'RESOLVED', 'CLOSED',
 ]);
+
+const UserSummarySchema = z.object({
+  id: z.number(),
+  name: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  phoneNumber: z.string().nullable().optional(),
+});
+
+const PropertySummarySchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  location: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
+  ownerId: z.number().nullable().optional(),
+});
+
+const UnitSummarySchema = z.object({
+  id: z.number(),
+  floorId: z.number().nullable().optional(),
+  floorLabel: z.string().nullable().optional(),
+  unitNumber: z.string(),
+});
 
 export const MaintenanceRequestSchema = z.object({
   id: z.number(),
-  tenant: z.object({ id: z.number(), name: z.string(), phoneNumber: z.string().optional() }),
-  property: z.object({ id: z.number(), title: z.string(), address: z.string().optional() }),
-  lease: z.object({ id: z.number() }).nullable().optional(),
+  tenant: UserSummarySchema,
+  property: PropertySummarySchema,
+  unit: UnitSummarySchema,
+  leaseContractId: z.number().nullable().optional(),
   title: z.string(),
   description: z.string(),
   category: MaintenanceCategorySchema,
   priority: MaintenancePrioritySchema,
   status: MaintenanceStatusSchema,
-  assignedTo: z.object({ id: z.number(), name: z.string() }).nullable().optional(),
   resolutionNotes: z.string().nullable().optional(),
   imageUrls: z.array(z.string()).default([]),
-  resolvedAt: z.string().datetime().nullable().optional(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  resolvedAt: z.string().nullable().optional(),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
 });
 
 export const CreateMaintenanceSchema = z.object({
-  propertyId: z.number(),
-  leaseId: z.number().optional(),
-  title: z.string().min(5, 'Please provide a brief title').max(120),
-  description: z.string().min(10, 'Please describe the issue').max(2000),
+  floorUnitId: z.number(),
+  leaseContractId: z.number().optional(),
+  title: z.string().min(5).max(120),
+  description: z.string().min(10).max(2000),
   category: MaintenanceCategorySchema,
   priority: MaintenancePrioritySchema.default('MEDIUM'),
   imageUrls: z.array(z.string()).max(5).default([]),
@@ -214,32 +250,40 @@ export const CreateMaintenanceSchema = z.object({
 
 export const UpdateMaintenanceSchema = z.object({
   status: MaintenanceStatusSchema,
-  assignedToId: z.number().optional(),
-  resolutionNotes: z.string().optional(),
+  resolutionNotes: z.string().max(2000).optional(),
 });
-
-export type MaintenanceRequest = z.infer<typeof MaintenanceRequestSchema>;
-export type CreateMaintenance = z.infer<typeof CreateMaintenanceSchema>;
 ```
 
 ## Testing benchmark
 
 | ID | Scenario | Preconditions | Steps | Expected outcome |
 |----|----------|---------------|-------|------------------|
-| F6-01 | Submit request | Tenant with `ACTIVE` lease on property | POST maintenance | 201; status `SUBMITTED` |
-| F6-02 | No lease | Tenant not leasing property | POST | 403 or 400 per rule |
+| F6-01 | Submit request | Tenant with `ACCEPTED` `LeaseContract` on unit | POST maintenance | 201; status `SUBMITTED` |
+| F6-02 | No contract | Tenant not leasing unit | POST | 403 or 400 |
 | F6-03 | Tenant list | Several requests | GET as tenant | Only own rows |
-| F6-04 | Owner queue | Request on owned property | GET as landlord | Row visible |
-| F6-05 | Status progression | Owner | PUT `UNDER_REVIEW` → `IN_PROGRESS` → `RESOLVED` | Each persists; optional notification |
+| F6-04 | Owner queue | Request on owned property | GET as `LAND_LORD` | Row visible |
+| F6-05 | Status progression | Owner | PUT `UNDER_REVIEW` → `IN_PROGRESS` → `RESOLVED` | Each persists |
 | F6-06 | Foreign update | Wrong landlord | PUT status | 403 |
-| F6-07 | Assign caretaker | CARETAKER user | PUT `assignedTo` | Only if authorised; tenant sees assignee |
-| F6-08 | Priority / category | — | Filter GET by `priority` | Correct subset |
-| F6-FE-01 | Portal form | Tenant | Submit | Appears in list with badge |
+| F6-07 | Filter priority | Owner | GET `?priority=URGENT` | Correct subset |
+| F6-08 | Get by id | Tenant | GET `/{id}` own vs other's | 200 vs 403 |
+| F6-FE-01 | Portal form | Tenant | Submit via UI | Appears in list with badge |
 | F6-FE-02 | Owner board | Landlord | Change status | Tenant UI shows update after refetch |
 
-**Leak test:** tenant A must never see tenant B’s request text in list or by id.
+**Leak test:** tenant A must never see tenant B's request text in list or by id.
 
 ## References
 
-- Frontend: `pages/tenant/MaintenancePortal.tsx`, `router.tsx`, `layouts/OwnerLayout.tsx`
-- Depends on: Features 1–2, lease linkage optional but recommended
+**Backend (patterns to copy):**
+- `controllers/application/ApplicationController.java`
+- `services/application/ApplicationService.java`
+- `services/lease/LeaseContractService.java` (`canManage`, `assertTenant`)
+- `payloads/responses/application/ApplicationResponse.java`
+- `models/application/PropertyApplication.java`
+
+**Frontend:**
+- `src/pages/tenant/MaintenancePortal.tsx` (replace mock)
+- `src/api/applicationApi.ts`, `src/queries/application.queries.ts`
+- `src/router.tsx`, `src/layouts/OwnerLayout.tsx`, `src/layouts/TenantLayout.tsx`
+- `src/api/fileUploadApi.ts`, `src/lib/propertyMediaUrl.ts`
+
+**Depends on:** Features 1–2 (properties/units), Feature 3 (`LeaseContract` with `ACCEPTED` status). Feature 7 notifications optional follow-up.

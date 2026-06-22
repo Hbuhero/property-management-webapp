@@ -1,13 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
     ArrowLeft,
-    ArrowRight,
     CalendarClock,
     CalendarDays,
     CheckCircle2,
     ChevronDown,
-    ChevronUp,
     CircleCheck,
     FileText,
     Home,
@@ -26,20 +24,26 @@ import {
     useLeaseContracts,
     useRejectLeaseContract,
 } from '@/queries/leaseContract.queries';
+import { InvoiceListWithDetail } from '@/components/invoices/InvoiceListWithDetail';
+import { MobilePayDialog } from '@/components/invoices/MobilePayDialog';
+import { RequestInvoiceDialog } from '@/components/invoices/RequestInvoiceDialog';
+import { formatInvoiceMoney } from '@/components/invoices/invoiceFormat';
+import {
+    buildContractItemScheduleEntries,
+    contractTotalValue,
+    leaseItemTotal,
+    type ScheduleEntry,
+} from '@/lib/leaseSchedule';
+import { earliestInvoiceDueDate, sumPendingInvoiceAmount } from '@/lib/tenantBilling';
+import { useInvoices } from '@/queries/invoice.queries';
 import type { ApplicationStatus } from '@/schemas/application.schema';
+import type { Invoice } from '@/schemas/invoice.schema';
 import type { LeaseContract } from '@/schemas/leaseContract.schema';
 
 type ApplicantDataView = {
     stay?: string;
     requirements: Array<{ question: string; answer: string }>;
     legacyLines: string[];
-};
-
-type ScheduleEntry = {
-    key: string;
-    label: string;
-    date: string;
-    amount: number | undefined;
 };
 
 type LeaseItem = LeaseContract['items'][number];
@@ -86,10 +90,6 @@ function formatMonthYear(value: string | null | undefined): string {
         month: 'short',
         year: 'numeric',
     }).format(d);
-}
-
-function todayIso(): string {
-    return new Date().toISOString().slice(0, 10);
 }
 
 function statusPillClass(status: ApplicationStatus | LeaseContract['status'] | 'NONE'): string {
@@ -158,31 +158,6 @@ function initials(value: string | null | undefined): string {
         .toUpperCase();
 }
 
-function addTimelineOffset(
-    startIso: string,
-    timeFrame: LeaseItem['timeFrame'],
-    offset: number,
-): string | null {
-    const d = new Date(`${startIso}T00:00:00`);
-    if (Number.isNaN(d.getTime())) return null;
-    switch (timeFrame) {
-        case 'DAY':
-            d.setDate(d.getDate() + offset);
-            break;
-        case 'MONTH':
-            d.setMonth(d.getMonth() + offset);
-            break;
-        case 'YEAR':
-            d.setFullYear(d.getFullYear() + offset);
-            break;
-        case 'NONE':
-        case null:
-        case undefined:
-            return startIso;
-    }
-    return d.toISOString().slice(0, 10);
-}
-
 function leaseDurationLabel(startDate: string, endDate: string): string {
     const start = new Date(`${startDate}T00:00:00`);
     const end = new Date(`${endDate}T00:00:00`);
@@ -216,51 +191,13 @@ function timeFrameLabel(timeFrame: LeaseItem['timeFrame']): string {
     }
 }
 
-function itemTotal(item: LeaseItem): number | undefined {
-    if (item.totalAmount != null) return item.totalAmount;
-    if (item.amount == null) return undefined;
-    if (item.leaseType !== 'RECURRING') return item.amount;
-    return item.amount * (item.recurringNumber ?? 1);
-}
-
-
-function contractTotalValue(contract: LeaseContract): number | undefined {
-    const totals = contract.items.map(itemTotal).filter((value): value is number => value != null);
-    if (totals.length === 0) return undefined;
-    return totals.reduce((sum, value) => sum + value, 0);
-}
-
-function leaseItemScheduleEntries(item: LeaseItem, contract: LeaseContract, itemIndex: number): ScheduleEntry[] {
-    const startDate = item.startDate ?? contract.startDate;
-    if (!startDate || item.amount == null || item.amount <= 0) return [];
-    if (item.leaseType !== 'RECURRING') {
-        return [
-            {
-                key: `${item.id ?? item.label}-${itemIndex}-once`,
-                label: item.label || 'One-time charge',
-                date: startDate,
-                amount: item.amount,
-            },
-        ];
-    }
-    const count = item.recurringNumber ?? 1;
-    if (count < 1 || !Number.isInteger(count)) return [];
-    if (!item.timeFrame || item.timeFrame === 'NONE') {
-        return [
-            {
-                key: `${item.id ?? item.label}-${itemIndex}-recurring`,
-                label: item.label || 'Recurring charge',
-                date: startDate,
-                amount: item.amount,
-            },
-        ];
-    }
-    return Array.from({ length: count }, (_, idx) => ({
-        key: `${item.id ?? item.label}-${itemIndex}-${idx}`,
-        label: count === 1 ? item.label || 'Recurring charge' : `${item.label || 'Recurring charge'} ${idx + 1}`,
-        date: addTimelineOffset(startDate, item.timeFrame, idx) ?? startDate,
+function scheduleItemInput(item: LeaseItem): Parameters<typeof leaseItemTotal>[0] {
+    return {
         amount: item.amount,
-    }));
+        totalAmount: item.totalAmount,
+        leaseType: item.leaseType,
+        recurringNumber: item.recurringNumber,
+    };
 }
 
 function itemScheduleSummary(item: LeaseItem, entries: ScheduleEntry[]): string {
@@ -276,14 +213,26 @@ function itemScheduleSummary(item: LeaseItem, entries: ScheduleEntry[]): string 
 
 function leaseItemScheduleGroups(contract: LeaseContract): LeaseItemScheduleGroup[] {
     return contract.items.map((item, index) => {
-        const entries = leaseItemScheduleEntries(item, contract, index).sort((a, b) => a.date.localeCompare(b.date));
+        const entries = buildContractItemScheduleEntries(
+            {
+                id: item.id,
+                label: item.label,
+                amount: item.amount,
+                totalAmount: item.totalAmount,
+                leaseType: item.leaseType,
+                timeFrame: item.timeFrame,
+                recurringNumber: item.recurringNumber,
+                startDate: item.startDate,
+            },
+            contract,
+            index,
+        ).sort((a, b) => a.date.localeCompare(b.date));
         return {
             key: `${item.id ?? item.label}-${index}`,
             item,
             entries,
-            total: itemTotal(item),
+            total: leaseItemTotal(scheduleItemInput(item)),
             startDate: item.startDate,
-            // endDate: itemEndDate(item),
             summary: itemScheduleSummary(item, entries),
         };
     })
@@ -296,11 +245,90 @@ function leaseItemScheduleGroups(contract: LeaseContract): LeaseItemScheduleGrou
     });
 }
 
-function nextPaymentText(entries: ScheduleEntry[]): string {
-    if (entries.length === 0) return 'No scheduled payment yet';
-    const today = todayIso();
-    const next = entries.find((entry) => entry.date >= today) ?? entries[0];
-    return `Next payment due ${formatDate(next.date)}`;
+function ContractInvoiceSection({ contract }: { contract: LeaseContract }) {
+    const invoicesQuery = useInvoices({ leaseContractId: contract.id });
+    const [requestOpen, setRequestOpen] = useState(false);
+    const [payInvoice, setPayInvoice] = useState<Invoice | null>(null);
+
+    const invoices = invoicesQuery.data ?? [];
+    const pending = invoices.filter((invoice) => invoice.status === 'PENDING');
+    const outstanding = sumPendingInvoiceAmount(invoices);
+    const nextDue = earliestInvoiceDueDate(invoices);
+    const currency = pending[0]?.currency ?? 'TZS';
+
+    return (
+        <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Billing & invoices</h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                        Outstanding {formatInvoiceMoney(outstanding, currency)}
+                        {nextDue ? ` · next due ${formatDate(nextDue)}` : ''}
+                    </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" asChild>
+                        <Link to="/tenant/payments">Open payment hub</Link>
+                    </Button>
+                    <Button
+                        type="button"
+                        className="bg-emerald-600 text-white hover:bg-emerald-700"
+                        onClick={() => setRequestOpen(true)}
+                    >
+                        Request invoice
+                    </Button>
+                </div>
+            </div>
+
+            <div className="mt-4">
+                <InvoiceListWithDetail
+                    invoices={invoices.slice(0, 8)}
+                    isLoading={invoicesQuery.isPending}
+                    emptyMessage="No invoices for this lease yet."
+                    renderActions={(invoice) =>
+                        invoice.status === 'PENDING' && invoice.paymentMethod === 'MOBILE' ? (
+                            <Button
+                                type="button"
+                                size="sm"
+                                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                onClick={() => setPayInvoice(invoice)}
+                            >
+                                Pay
+                            </Button>
+                        ) : null
+                    }
+                    renderDetailActions={(invoice) =>
+                        invoice.status === 'PENDING' && invoice.paymentMethod === 'MOBILE' ? (
+                            <Button
+                                type="button"
+                                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                onClick={() => setPayInvoice(invoice)}
+                            >
+                                Pay with mobile money
+                            </Button>
+                        ) : invoice.status === 'PENDING' && invoice.paymentMethod === 'CASH' ? (
+                            <p className="text-sm text-slate-500">
+                                Pending cash payment — waiting for landlord confirmation.
+                            </p>
+                        ) : null
+                    }
+                />
+            </div>
+
+            <RequestInvoiceDialog
+                leaseContractId={contract.id}
+                open={requestOpen}
+                onOpenChange={setRequestOpen}
+            />
+            <MobilePayDialog
+                invoice={payInvoice}
+                open={payInvoice != null}
+                onOpenChange={(open) => {
+                    if (!open) setPayInvoice(null);
+                }}
+            />
+        </div>
+    );
 }
 
 function ContractSchedule({ contract }: { contract: LeaseContract | undefined }) {
@@ -315,8 +343,6 @@ function ContractSchedule({ contract }: { contract: LeaseContract | undefined })
     }
 
     const scheduleGroups = leaseItemScheduleGroups(contract);
-    const scheduleEntries = scheduleGroups.flatMap((group) => group.entries).sort((a, b) => a.date.localeCompare(b.date));
-    const hasExpandableSchedule = scheduleGroups.some((group) => group.entries.length > 3);
     const scheduleRange = `${formatMonthYear(contract.startDate)} - ${formatMonthYear(contract.endDate)}`;
 
     return (
@@ -855,6 +881,8 @@ const TenantApplicationDetail = () => {
                     </div>
 
                     <ContractSchedule contract={contract} />
+
+                    {contract?.status === 'ACCEPTED' ? <ContractInvoiceSection contract={contract} /> : null}
 
                     <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
                         <div className="flex items-center justify-between gap-4">

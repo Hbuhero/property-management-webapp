@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { Building2, Eye, EyeOff, Lock, Mail, Phone, User, Users } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useRegisterMutation } from '@/queries/auth.queries';
+import { uploadPublicImage } from '@/api/fileUploadApi';
+import { ProfileImageField } from '@/components/auth/ProfileImageField';
 import { showError } from '@/lib/toast';
 import { homePathForRole } from '@/lib/authRole';
 import { registerSchema, type RegisterFormData, type SelfRegistrationRole } from '@/schemas/auth.schema';
@@ -26,6 +28,8 @@ export default function RegisterPage() {
         image: '',
     });
     const [errors, setErrors] = useState<Partial<Record<keyof RegisterFormData, string>>>({});
+    const [profileFile, setProfileFile] = useState<File | null>(null);
+    const [profilePreviewUrl, setProfilePreviewUrl] = useState<string | null>(null);
 
     const setField = (key: keyof RegisterFormData, value: string) => {
         setForm((prev) => ({ ...prev, [key]: value }));
@@ -53,13 +57,18 @@ export default function RegisterPage() {
         }
         setErrors({});
         try {
+            let imagePath: string | undefined;
+            if (profileFile) {
+                imagePath = await uploadPublicImage(profileFile);
+            }
+
             await registerMutation.mutateAsync({
                 name: result.data.name,
                 email: result.data.email,
                 phoneNumber: result.data.phoneNumber.trim(),
                 password: result.data.password,
                 role: result.data.role,
-                image: result.data.image?.trim() || undefined,
+                image: imagePath,
             });
         } catch (err) {
             showError(err instanceof Error ? err.message : t('auth.registerError'));
@@ -212,20 +221,12 @@ export default function RegisterPage() {
                         {errors.role && <p className="text-xs text-red-500">{errors.role}</p>}
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="img">
-                            {t('auth.profileImageUrl')} <span className="text-slate-400 font-normal">({t('common.optional')})</span>
-                        </label>
-                        <input
-                            id="img"
-                            type="url"
-                            value={form.image ?? ''}
-                            onChange={(e) => setField('image', e.target.value)}
-                            placeholder="https://"
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        />
-                        {errors.image && <p className="text-xs text-red-500">{errors.image}</p>}
-                    </div>
+                    <ProfileImageField
+                        previewUrl={profilePreviewUrl}
+                        onPreviewChange={setProfilePreviewUrl}
+                        onFileChange={setProfileFile}
+                        error={errors.image}
+                    />
 
                     <button
                         type="submit"
