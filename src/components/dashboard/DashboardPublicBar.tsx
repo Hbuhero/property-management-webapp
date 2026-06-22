@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Globe, ShoppingBag } from 'lucide-react';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 export function DashboardPublicBar() {
     return (
@@ -18,6 +19,9 @@ export function DashboardPublicBar() {
                 <Globe className="h-4 w-4 shrink-0" aria-hidden />
                 Website home
             </Link>
+            <div className="ml-auto">
+                <NotificationBell />
+            </div>
         </div>
     );
 }

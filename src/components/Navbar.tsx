@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import type { RootState } from '@/store';
 import { homePathForRole } from '@/lib/authRole';
 
@@ -111,14 +112,19 @@ function NavbarMobile({
 
               <div className="pt-2 pb-1 px-1 space-y-2">
                 {isAuthenticated && user ? (
-                  <Link
-                    to={dashboardHref}
-                    onClick={() => setIsOpen(false)}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                  >
-                    <UserRound className="h-4 w-4 shrink-0" aria-hidden />
-                    {t('nav.dashboard')}
-                  </Link>
+                  <>
+                    <div className="flex justify-center px-2 pb-1">
+                      <NotificationBell align="center" triggerClassName="rounded-2xl" />
+                    </div>
+                    <Link
+                      to={dashboardHref}
+                      onClick={() => setIsOpen(false)}
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                    >
+                      <UserRound className="h-4 w-4 shrink-0" aria-hidden />
+                      {t('nav.dashboard')}
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <Link
@@ -238,13 +244,16 @@ const Navbar = () => {
             <div className="w-px h-5 bg-slate-300 dark:bg-slate-700 mx-1" />
 
             {isAuthenticated && user ? (
-              <Link
-                to={dashboardHref}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:border-emerald-500/40 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-100 dark:hover:border-emerald-500/30 dark:hover:text-emerald-400"
-              >
-                <UserRound className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-                <span className="max-w-40 truncate">{user.name?.trim() || user.email}</span>
-              </Link>
+              <>
+                <NotificationBell triggerClassName="rounded-full" />
+                <Link
+                  to={dashboardHref}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:border-emerald-500/40 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-100 dark:hover:border-emerald-500/30 dark:hover:text-emerald-400"
+                >
+                  <UserRound className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+                  <span className="max-w-40 truncate">{user.name?.trim() || user.email}</span>
+                </Link>
+              </>
             ) : (
               <>
                 <Link
