@@ -85,5 +85,16 @@
         "viewDetails": "View Details",
         "addProperty": "Add Property",
         "editProperty": "Edit Property"
+    },
+    "reports": {
+        "downloadPdf": "Download PDF",
+        "downloading": "Downloading…",
+        "exportList": "Export PDF",
+        "exportInvoices": "Export invoices PDF",
+        "exportMaintenance": "Export maintenance PDF",
+        "downloadLease": "Download lease PDF",
+        "downloadInvoice": "Download invoice",
+        "downloadMaintenance": "Download PDF",
+        "exportFinancialSummary": "Export financial summary"
     }
 }

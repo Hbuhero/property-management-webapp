@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Wrench, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CreateMaintenanceDialog } from '@/components/maintenance/CreateMaintenanceDialog';
@@ -6,8 +7,13 @@ import { MaintenanceCategoryLabel } from '@/components/maintenance/MaintenanceCa
 import { MaintenancePriorityBadge } from '@/components/maintenance/MaintenancePriorityBadge';
 import { MaintenanceStatusBadge } from '@/components/maintenance/MaintenanceStatusBadge';
 import { MaintenanceRequestDetailPanel } from '@/components/maintenance/MaintenanceRequestDetailPanel';
+import { DownloadReportButton } from '@/components/reports/DownloadReportButton';
 import { Button } from '@/components/ui/button';
 import { useMaintenanceRequests } from '@/queries/maintenance.queries';
+import {
+    useDownloadMaintenanceListPdf,
+    useDownloadMaintenancePdf,
+} from '@/queries/report.queries';
 import type { MaintenanceRequest } from '@/schemas/maintenance.schema';
 
 const fadeUp = {
@@ -43,6 +49,8 @@ function MaintenanceRequestCard({
     onToggle: () => void;
     index: number;
 }) {
+    const { t } = useTranslation();
+    const downloadPdf = useDownloadMaintenancePdf();
     const closed = isClosedStatus(request.status);
 
     return (
@@ -78,6 +86,12 @@ function MaintenanceRequestCard({
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                    <DownloadReportButton
+                        size="sm"
+                        label={t('reports.downloadMaintenance')}
+                        isLoading={downloadPdf.isPending}
+                        onDownload={() => downloadPdf.mutateAsync(request.id)}
+                    />
                     <Button variant="ghost" size="icon" onClick={onToggle} aria-label={expanded ? 'Collapse' : 'Expand'}>
                         {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </Button>
@@ -94,20 +108,31 @@ function MaintenanceRequestCard({
 }
 
 const MaintenancePortal = () => {
+    const { t } = useTranslation();
     const [createOpen, setCreateOpen] = useState(false);
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const { data: requests = [], isLoading, isError, error } = useMaintenanceRequests();
+    const downloadList = useDownloadMaintenanceListPdf();
 
     return (
         <motion.div {...fadeUp} className="max-w-3xl mx-auto space-y-6">
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Maintenance Portal</h1>
-                <Button
-                    className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-500/20"
-                    onClick={() => setCreateOpen(true)}
-                >
-                    New Request
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                    {requests.length > 0 ? (
+                        <DownloadReportButton
+                            label={t('reports.exportMaintenance')}
+                            isLoading={downloadList.isPending}
+                            onDownload={() => downloadList.mutateAsync(undefined)}
+                        />
+                    ) : null}
+                    <Button
+                        className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-500/20"
+                        onClick={() => setCreateOpen(true)}
+                    >
+                        New Request
+                    </Button>
+                </div>
             </div>
 
             {isLoading && (

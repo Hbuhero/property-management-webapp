@@ -28,6 +28,9 @@ import { InvoiceListWithDetail } from '@/components/invoices/InvoiceListWithDeta
 import { MobilePayDialog } from '@/components/invoices/MobilePayDialog';
 import { RequestInvoiceDialog } from '@/components/invoices/RequestInvoiceDialog';
 import { formatInvoiceMoney } from '@/components/invoices/invoiceFormat';
+import { DownloadReportButton } from '@/components/reports/DownloadReportButton';
+import { useDownloadInvoicePdf, useDownloadLeaseContractPdf } from '@/queries/report.queries';
+import { useTranslation } from 'react-i18next';
 import {
     buildContractItemScheduleEntries,
     contractTotalValue,
@@ -246,7 +249,9 @@ function leaseItemScheduleGroups(contract: LeaseContract): LeaseItemScheduleGrou
 }
 
 function ContractInvoiceSection({ contract }: { contract: LeaseContract }) {
+    const { t } = useTranslation();
     const invoicesQuery = useInvoices({ leaseContractId: contract.id });
+    const downloadInvoice = useDownloadInvoicePdf();
     const [requestOpen, setRequestOpen] = useState(false);
     const [payInvoice, setPayInvoice] = useState<Invoice | null>(null);
 
@@ -285,33 +290,55 @@ function ContractInvoiceSection({ contract }: { contract: LeaseContract }) {
                     invoices={invoices.slice(0, 8)}
                     isLoading={invoicesQuery.isPending}
                     emptyMessage="No invoices for this lease yet."
-                    renderActions={(invoice) =>
-                        invoice.status === 'PENDING' && invoice.paymentMethod === 'MOBILE' ? (
-                            <Button
-                                type="button"
+                    renderActions={(invoice) => (
+                        <div className="flex flex-wrap items-center gap-2">
+                            <DownloadReportButton
                                 size="sm"
-                                className="bg-emerald-600 text-white hover:bg-emerald-700"
-                                onClick={() => setPayInvoice(invoice)}
-                            >
-                                Pay
-                            </Button>
-                        ) : null
-                    }
-                    renderDetailActions={(invoice) =>
-                        invoice.status === 'PENDING' && invoice.paymentMethod === 'MOBILE' ? (
-                            <Button
-                                type="button"
-                                className="bg-emerald-600 text-white hover:bg-emerald-700"
-                                onClick={() => setPayInvoice(invoice)}
-                            >
-                                Pay with mobile money
-                            </Button>
-                        ) : invoice.status === 'PENDING' && invoice.paymentMethod === 'CASH' ? (
-                            <p className="text-sm text-slate-500">
-                                Pending cash payment — waiting for landlord confirmation.
-                            </p>
-                        ) : null
-                    }
+                                hideIcon
+                                label={t('reports.downloadInvoice')}
+                                isLoading={
+                                    downloadInvoice.isPending &&
+                                    downloadInvoice.variables === invoice.id
+                                }
+                                onDownload={() => downloadInvoice.mutateAsync(invoice.id)}
+                            />
+                            {invoice.status === 'PENDING' && invoice.paymentMethod === 'MOBILE' ? (
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                    onClick={() => setPayInvoice(invoice)}
+                                >
+                                    Pay
+                                </Button>
+                            ) : null}
+                        </div>
+                    )}
+                    renderDetailActions={(invoice) => (
+                        <div className="flex flex-col gap-2">
+                            <DownloadReportButton
+                                label={t('reports.downloadInvoice')}
+                                isLoading={
+                                    downloadInvoice.isPending &&
+                                    downloadInvoice.variables === invoice.id
+                                }
+                                onDownload={() => downloadInvoice.mutateAsync(invoice.id)}
+                            />
+                            {invoice.status === 'PENDING' && invoice.paymentMethod === 'MOBILE' ? (
+                                <Button
+                                    type="button"
+                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                    onClick={() => setPayInvoice(invoice)}
+                                >
+                                    Pay with mobile money
+                                </Button>
+                            ) : invoice.status === 'PENDING' && invoice.paymentMethod === 'CASH' ? (
+                                <p className="text-sm text-slate-500">
+                                    Pending cash payment — waiting for landlord confirmation.
+                                </p>
+                            ) : null}
+                        </div>
+                    )}
                 />
             </div>
 
@@ -688,6 +715,7 @@ function ContractDecisionPanel({
 }
 
 const TenantApplicationDetail = () => {
+    const { t } = useTranslation();
     const { applicationId } = useParams();
     const [searchParams] = useSearchParams();
     const appId = applicationId ? Number(applicationId) : undefined;
@@ -695,6 +723,7 @@ const TenantApplicationDetail = () => {
     const contractsQuery = useLeaseContracts();
     const acceptMut = useAcceptLeaseContract();
     const rejectMut = useRejectLeaseContract();
+    const downloadLease = useDownloadLeaseContractPdf();
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [authenticityConfirmed, setAuthenticityConfirmed] = useState(false);
     const navigate = useNavigate();
@@ -892,7 +921,17 @@ const TenantApplicationDetail = () => {
                                     {contract ? `Version ${contract.systemTermsVersion ?? 'v1'}` : 'Waiting for owner contract'}
                                 </p>
                             </div>
-                            <FileText className="h-5 w-5 text-emerald-600" />
+                            <div className="flex items-center gap-2">
+                                {contract ? (
+                                    <DownloadReportButton
+                                        label={t('reports.downloadLease')}
+                                        isLoading={downloadLease.isPending}
+                                        onDownload={() => downloadLease.mutateAsync(contract.id)}
+                                    />
+                                ) : (
+                                    <FileText className="h-5 w-5 text-emerald-600" />
+                                )}
+                            </div>
                         </div>
                         {contract?.terms ? (
                             <p className="mt-5 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-300">

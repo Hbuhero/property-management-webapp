@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { PageBackLink } from '@/components/dashboard/PageBackLink';
 import {
@@ -16,9 +17,15 @@ import { formatInvoiceDate, formatInvoiceMoney } from '@/components/invoices/inv
 import { InvoiceListWithDetail } from '@/components/invoices/InvoiceListWithDetail';
 import { MarkPaidConfirmDialog } from '@/components/invoices/MarkPaidConfirmDialog';
 import { OwnerFinancesNav } from '@/components/invoices/OwnerFinancesNav';
+import { DownloadReportButton } from '@/components/reports/DownloadReportButton';
 import { paidRevenueByMonth, sumPaidInvoiceAmount } from '@/lib/invoiceAnalytics';
 import { sumPendingInvoiceAmount } from '@/lib/tenantBilling';
 import { useInvoices } from '@/queries/invoice.queries';
+import {
+    useDownloadFinancialSummaryPdf,
+    useDownloadInvoiceListPdf,
+    useDownloadInvoicePdf,
+} from '@/queries/report.queries';
 import type { Invoice } from '@/schemas/invoice.schema';
 
 const fadeUp = {
@@ -28,6 +35,7 @@ const fadeUp = {
 };
 
 const FinancialReports = () => {
+    const { t } = useTranslation();
     const location = useLocation();
     const base = location.pathname.startsWith('/landlord') ? '/landlord' : '/owner';
     const [searchParams] = useSearchParams();
@@ -42,6 +50,10 @@ const FinancialReports = () => {
     const pendingQuery = useInvoices({ status: 'PENDING', ...filters });
     const paidQuery = useInvoices({ status: 'PAID', ...filters });
 
+    const downloadInvoice = useDownloadInvoicePdf();
+    const downloadInvoiceList = useDownloadInvoiceListPdf();
+    const downloadFinancialSummary = useDownloadFinancialSummaryPdf();
+
     const [markPaidInvoice, setMarkPaidInvoice] = useState<Invoice | null>(null);
 
     const allInvoices = allQuery.data ?? [];
@@ -52,6 +64,13 @@ const FinancialReports = () => {
     const totalPaid = sumPaidInvoiceAmount(paid);
     const totalOutstanding = sumPendingInvoiceAmount(pending);
     const currency = allInvoices[0]?.currency ?? 'TZS';
+
+    const listExportFilters = {
+        status: 'PENDING' as const,
+        ...(leaseContractId != null && Number.isFinite(leaseContractId)
+            ? { leaseContractId }
+            : {}),
+    };
 
     return (
         <motion.div {...fadeUp} className="space-y-6">
@@ -65,7 +84,19 @@ const FinancialReports = () => {
                         Revenue from paid invoices and outstanding tenant balances.
                     </p>
                 </div>
-                <OwnerFinancesNav />
+                <div className="flex flex-wrap items-center gap-2">
+                    <DownloadReportButton
+                        label={t('reports.exportFinancialSummary')}
+                        isLoading={downloadFinancialSummary.isPending}
+                        onDownload={() => downloadFinancialSummary.mutateAsync(undefined)}
+                    />
+                    <DownloadReportButton
+                        label={t('reports.exportInvoices')}
+                        isLoading={downloadInvoiceList.isPending}
+                        onDownload={() => downloadInvoiceList.mutateAsync(listExportFilters)}
+                    />
+                    <OwnerFinancesNav />
+                </div>
             </div>
 
             {leaseContractId != null && Number.isFinite(leaseContractId) ? (
@@ -191,23 +222,45 @@ const FinancialReports = () => {
                         isLoading={pendingQuery.isPending}
                         emptyMessage="No outstanding invoices."
                         renderActions={(invoice) => (
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setMarkPaidInvoice(invoice)}
-                            >
-                                Mark paid
-                            </Button>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <DownloadReportButton
+                                    size="sm"
+                                    hideIcon
+                                    label={t('reports.downloadInvoice')}
+                                    isLoading={
+                                        downloadInvoice.isPending &&
+                                        downloadInvoice.variables === invoice.id
+                                    }
+                                    onDownload={() => downloadInvoice.mutateAsync(invoice.id)}
+                                />
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setMarkPaidInvoice(invoice)}
+                                >
+                                    Mark paid
+                                </Button>
+                            </div>
                         )}
                         renderDetailActions={(invoice) => (
-                            <Button
-                                type="button"
-                                className="bg-emerald-600 text-white hover:bg-emerald-700"
-                                onClick={() => setMarkPaidInvoice(invoice)}
-                            >
-                                Mark as paid
-                            </Button>
+                            <div className="flex flex-col gap-2">
+                                <DownloadReportButton
+                                    label={t('reports.downloadInvoice')}
+                                    isLoading={
+                                        downloadInvoice.isPending &&
+                                        downloadInvoice.variables === invoice.id
+                                    }
+                                    onDownload={() => downloadInvoice.mutateAsync(invoice.id)}
+                                />
+                                <Button
+                                    type="button"
+                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                    onClick={() => setMarkPaidInvoice(invoice)}
+                                >
+                                    Mark as paid
+                                </Button>
+                            </div>
                         )}
                     />
                 </div>

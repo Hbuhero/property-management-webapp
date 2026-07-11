@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Clock, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -7,9 +8,14 @@ import { formatInvoiceDate, formatInvoiceMoney } from '@/components/invoices/inv
 import { InvoiceListWithDetail } from '@/components/invoices/InvoiceListWithDetail';
 import { MobilePayDialog } from '@/components/invoices/MobilePayDialog';
 import { RequestInvoiceDialog } from '@/components/invoices/RequestInvoiceDialog';
+import { DownloadReportButton } from '@/components/reports/DownloadReportButton';
 import { earliestInvoiceDueDate, sumPendingInvoiceAmount } from '@/lib/tenantBilling';
 import { useInvoices } from '@/queries/invoice.queries';
 import { useLeaseContracts } from '@/queries/leaseContract.queries';
+import {
+    useDownloadInvoiceListPdf,
+    useDownloadInvoicePdf,
+} from '@/queries/report.queries';
 import type { Invoice } from '@/schemas/invoice.schema';
 
 const fadeUp = {
@@ -19,8 +25,11 @@ const fadeUp = {
 };
 
 const PaymentHub = () => {
+    const { t } = useTranslation();
     const pendingQuery = useInvoices({ status: 'PENDING' });
     const contractsQuery = useLeaseContracts();
+    const downloadInvoice = useDownloadInvoicePdf();
+    const downloadInvoiceList = useDownloadInvoiceListPdf();
     const [payInvoice, setPayInvoice] = useState<Invoice | null>(null);
     const [requestOpen, setRequestOpen] = useState(false);
 
@@ -45,17 +54,24 @@ const PaymentHub = () => {
                         Pay mobile invoices or request a manual bill for your active lease.
                     </p>
                 </div>
-                {activeContract ? (
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setRequestOpen(true)}
-                        className="w-fit"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Request invoice
-                    </Button>
-                ) : null}
+                <div className="flex flex-wrap gap-2">
+                    <DownloadReportButton
+                        label={t('reports.exportInvoices')}
+                        isLoading={downloadInvoiceList.isPending}
+                        onDownload={() => downloadInvoiceList.mutateAsync({ status: 'PENDING' })}
+                    />
+                    {activeContract ? (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setRequestOpen(true)}
+                            className="w-fit"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Request invoice
+                        </Button>
+                    ) : null}
+                </div>
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
@@ -117,36 +133,58 @@ const PaymentHub = () => {
                             invoices={pending}
                             isLoading={pendingQuery.isPending}
                             emptyMessage="No pending invoices. You're all caught up."
-                            renderActions={(invoice) =>
-                                invoice.paymentMethod === 'MOBILE' ? (
-                                    <Button
-                                        type="button"
+                            renderActions={(invoice) => (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <DownloadReportButton
                                         size="sm"
-                                        className="bg-emerald-600 text-white hover:bg-emerald-700"
-                                        onClick={() => setPayInvoice(invoice)}
-                                    >
-                                        Pay
-                                    </Button>
-                                ) : (
-                                    <span className="text-xs text-slate-500">Cash · owner confirms</span>
-                                )
-                            }
-                            renderDetailActions={(invoice) =>
-                                invoice.paymentMethod === 'MOBILE' ? (
-                                    <Button
-                                        type="button"
-                                        className="bg-emerald-600 text-white hover:bg-emerald-700"
-                                        onClick={() => setPayInvoice(invoice)}
-                                    >
-                                        Pay with mobile money
-                                    </Button>
-                                ) : (
-                                    <p className="text-sm text-slate-500">
-                                        Cash invoice — your landlord will mark this paid after
-                                        payment.
-                                    </p>
-                                )
-                            }
+                                        hideIcon
+                                        label={t('reports.downloadInvoice')}
+                                        isLoading={
+                                            downloadInvoice.isPending &&
+                                            downloadInvoice.variables === invoice.id
+                                        }
+                                        onDownload={() => downloadInvoice.mutateAsync(invoice.id)}
+                                    />
+                                    {invoice.paymentMethod === 'MOBILE' ? (
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                            onClick={() => setPayInvoice(invoice)}
+                                        >
+                                            Pay
+                                        </Button>
+                                    ) : (
+                                        <span className="text-xs text-slate-500">Cash · owner confirms</span>
+                                    )}
+                                </div>
+                            )}
+                            renderDetailActions={(invoice) => (
+                                <div className="flex flex-col gap-2">
+                                    <DownloadReportButton
+                                        label={t('reports.downloadInvoice')}
+                                        isLoading={
+                                            downloadInvoice.isPending &&
+                                            downloadInvoice.variables === invoice.id
+                                        }
+                                        onDownload={() => downloadInvoice.mutateAsync(invoice.id)}
+                                    />
+                                    {invoice.paymentMethod === 'MOBILE' ? (
+                                        <Button
+                                            type="button"
+                                            className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                            onClick={() => setPayInvoice(invoice)}
+                                        >
+                                            Pay with mobile money
+                                        </Button>
+                                    ) : (
+                                        <p className="text-sm text-slate-500">
+                                            Cash invoice — your landlord will mark this paid after
+                                            payment.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         />
                     )}
                 </div>

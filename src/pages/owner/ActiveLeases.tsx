@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CalendarClock, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -13,9 +14,11 @@ import {
 } from '@/components/ui/table';
 import { formatInvoiceDate, formatInvoiceMoney } from '@/components/invoices/invoiceFormat';
 import { OwnerFinancesNav } from '@/components/invoices/OwnerFinancesNav';
+import { DownloadReportButton } from '@/components/reports/DownloadReportButton';
 import { buildLeaseBillingSummaries } from '@/lib/invoiceAnalytics';
 import { useInvoices } from '@/queries/invoice.queries';
 import { useLeaseContracts } from '@/queries/leaseContract.queries';
+import { useDownloadLeaseContractPdf } from '@/queries/report.queries';
 
 const fadeUp = {
     initial: { opacity: 0, y: 16 },
@@ -24,10 +27,12 @@ const fadeUp = {
 };
 
 const ActiveLeases = () => {
+    const { t } = useTranslation();
     const location = useLocation();
     const base = location.pathname.startsWith('/landlord') ? '/landlord' : '/owner';
     const contractsQuery = useLeaseContracts();
     const invoicesQuery = useInvoices();
+    const downloadLease = useDownloadLeaseContractPdf();
 
     const summaries = useMemo(() => {
         const contracts = contractsQuery.data ?? [];
@@ -118,14 +123,28 @@ const ActiveLeases = () => {
                                             </span>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button type="button" size="sm" variant="outline" asChild>
-                                                <Link
-                                                    to={`${base}/finances?leaseContractId=${contract.id}`}
-                                                >
-                                                    <Eye className="h-4 w-4" />
-                                                    Billing
-                                                </Link>
-                                            </Button>
+                                            <div className="inline-flex flex-wrap items-center justify-end gap-2">
+                                                <DownloadReportButton
+                                                    size="sm"
+                                                    hideIcon
+                                                    label={t('reports.downloadLease')}
+                                                    isLoading={
+                                                        downloadLease.isPending &&
+                                                        downloadLease.variables === contract.id
+                                                    }
+                                                    onDownload={() =>
+                                                        downloadLease.mutateAsync(contract.id)
+                                                    }
+                                                />
+                                                <Button type="button" size="sm" variant="outline" asChild>
+                                                    <Link
+                                                        to={`${base}/finances?leaseContractId=${contract.id}`}
+                                                    >
+                                                        <Eye className="h-4 w-4" />
+                                                        Billing
+                                                    </Link>
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 );

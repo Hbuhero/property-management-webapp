@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
     ArrowLeft,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { DownloadReportButton } from '@/components/reports/DownloadReportButton';
 import { ApplicationContractDialog } from '@/pages/owner/ApplicationContractDialog';
 import { showError, showSuccess } from '@/lib/toast';
 import {
@@ -22,6 +24,7 @@ import {
     useLeaseContracts,
     useSendLeaseContract,
 } from '@/queries/leaseContract.queries';
+import { useDownloadLeaseContractPdf } from '@/queries/report.queries';
 import type { ApplicationStatus, PropertyApplication } from '@/schemas/application.schema';
 import type { LeaseContract } from '@/schemas/leaseContract.schema';
 
@@ -162,6 +165,7 @@ function ContractLineItems({
 }
 
 const ApplicationDetail = () => {
+    const { t } = useTranslation();
     const { applicationId } = useParams();
     const appId = applicationId ? Number(applicationId) : undefined;
     const appQuery = useApplication(Number.isFinite(appId) ? appId : undefined);
@@ -169,6 +173,7 @@ const ApplicationDetail = () => {
     const rejectMut = useRejectApplication();
     const deleteMut = useDeleteApplication();
     const sendMut = useSendLeaseContract();
+    const downloadLease = useDownloadLeaseContractPdf();
     const [contractOpen, setContractOpen] = useState(false);
     const [searchParams, setSearchParams] = useSearchParams();
     const [autoOpened, setAutoOpened] = useState(false);
@@ -356,7 +361,17 @@ const ApplicationDetail = () => {
                                     {contract ? `${contract.status} · ${contract.startDate} to ${contract.endDate}` : 'No draft yet'}
                                 </p>
                             </div>
-                            <FileText className="h-5 w-5 text-emerald-600" />
+                            <div className="flex items-center gap-2">
+                                {contract ? (
+                                    <DownloadReportButton
+                                        label={t('reports.downloadLease')}
+                                        isLoading={downloadLease.isPending}
+                                        onDownload={() => downloadLease.mutateAsync(contract.id)}
+                                    />
+                                ) : (
+                                    <FileText className="h-5 w-5 text-emerald-600" />
+                                )}
+                            </div>
                         </div>
                         <div className="mt-5">
                             <ContractLineItems contract={contract} />

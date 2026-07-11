@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Loader2, Pencil, Wrench } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MaintenanceCategoryLabel } from '@/components/maintenance/MaintenanceCategoryLabel';
@@ -11,6 +12,7 @@ import {
     formatMaintenanceStatus,
 } from '@/components/maintenance/maintenanceLabels';
 import { UpdateMaintenanceDialog } from '@/components/maintenance/UpdateMaintenanceDialog';
+import { DownloadReportButton } from '@/components/reports/DownloadReportButton';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -29,6 +31,10 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useMaintenanceRequests } from '@/queries/maintenance.queries';
+import {
+    useDownloadMaintenanceListPdf,
+    useDownloadMaintenancePdf,
+} from '@/queries/report.queries';
 import type {
     MaintenanceListFilters,
     MaintenancePriority,
@@ -64,6 +70,7 @@ function isOpenStatus(status: MaintenanceStatus): boolean {
 }
 
 const MaintenanceQueue = () => {
+    const { t } = useTranslation();
     const [statusFilter, setStatusFilter] = useState<MaintenanceStatus | 'ALL'>('ALL');
     const [priorityFilter, setPriorityFilter] = useState<MaintenancePriority | 'ALL'>('ALL');
     const [propertyFilter, setPropertyFilter] = useState<number | 'ALL'>('ALL');
@@ -80,6 +87,8 @@ const MaintenanceQueue = () => {
 
     const requestsQuery = useMaintenanceRequests(listFilters);
     const allRequestsQuery = useMaintenanceRequests();
+    const downloadList = useDownloadMaintenanceListPdf();
+    const downloadPdf = useDownloadMaintenancePdf();
 
     const rows = requestsQuery.data ?? [];
     const openCount = rows.filter((row) => isOpenStatus(row.status)).length;
@@ -138,6 +147,17 @@ const MaintenanceQueue = () => {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                        <DownloadReportButton
+                            label={t('reports.exportMaintenance')}
+                            isLoading={downloadList.isPending}
+                            onDownload={() =>
+                                downloadList.mutateAsync({
+                                    ...(statusFilter !== 'ALL' ? { status: statusFilter } : {}),
+                                    ...(priorityFilter !== 'ALL' ? { priority: priorityFilter } : {}),
+                                    ...(propertyFilter !== 'ALL' ? { propertyId: propertyFilter } : {}),
+                                })
+                            }
+                        />
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="w-fit">
@@ -288,15 +308,29 @@ const MaintenanceQueue = () => {
                                             {formatShortDate(request.createdAt)}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => openUpdate(request.id)}
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                                Update
-                                            </Button>
+                                            <div className="inline-flex flex-wrap items-center justify-end gap-2">
+                                                <DownloadReportButton
+                                                    size="sm"
+                                                    hideIcon
+                                                    label={t('reports.downloadMaintenance')}
+                                                    isLoading={
+                                                        downloadPdf.isPending &&
+                                                        downloadPdf.variables === request.id
+                                                    }
+                                                    onDownload={() =>
+                                                        downloadPdf.mutateAsync(request.id)
+                                                    }
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => openUpdate(request.id)}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                    Update
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))

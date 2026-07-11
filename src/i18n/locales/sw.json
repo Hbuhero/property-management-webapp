@@ -85,5 +85,16 @@
         "viewDetails": "Tazama Maelezo",
         "addProperty": "Ongeza Nyumba",
         "editProperty": "Hariri Nyumba"
+    },
+    "reports": {
+        "downloadPdf": "Pakua PDF",
+        "downloading": "Inapakua…",
+        "exportList": "Hamisha PDF",
+        "exportInvoices": "Hamisha ankara PDF",
+        "exportMaintenance": "Hamisha matengenezo PDF",
+        "downloadLease": "Pakua mkataba PDF",
+        "downloadInvoice": "Pakua ankara",
+        "downloadMaintenance": "Pakua PDF",
+        "exportFinancialSummary": "Hamisha muhtasari wa fedha"
     }
 }

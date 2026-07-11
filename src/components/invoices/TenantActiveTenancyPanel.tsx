@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CalendarClock, CreditCard, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatInvoiceDate, formatInvoiceMoney } from '@/components/invoices/invoiceFormat';
 import { InvoiceListTable } from '@/components/invoices/InvoiceListTable';
+import { DownloadReportButton } from '@/components/reports/DownloadReportButton';
 import { buildScheduleEntries } from '@/lib/leaseSchedule';
 import {
     earliestInvoiceDueDate,
@@ -10,6 +12,7 @@ import {
     sumPendingInvoiceAmount,
 } from '@/lib/tenantBilling';
 import { useInvoices } from '@/queries/invoice.queries';
+import { useDownloadLeaseContractPdf } from '@/queries/report.queries';
 import type { LeaseContract } from '@/schemas/leaseContract.schema';
 
 type Props = {
@@ -19,7 +22,9 @@ type Props = {
 };
 
 export function TenantActiveTenancyPanel({ contract, onRequestInvoice, compact = false }: Props) {
+    const { t } = useTranslation();
     const invoicesQuery = useInvoices({ leaseContractId: contract.id });
+    const downloadLease = useDownloadLeaseContractPdf();
     const invoices = invoicesQuery.data ?? [];
     const pending = invoices.filter((invoice) => invoice.status === 'PENDING');
     const recent = [...invoices]
@@ -51,6 +56,11 @@ export function TenantActiveTenancyPanel({ contract, onRequestInvoice, compact =
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                    <DownloadReportButton
+                        label={t('reports.downloadLease')}
+                        isLoading={downloadLease.isPending}
+                        onDownload={() => downloadLease.mutateAsync(contract.id)}
+                    />
                     <Button type="button" variant="outline" asChild>
                         <Link to="/tenant/payments">
                             <CreditCard className="h-4 w-4" />

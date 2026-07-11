@@ -107,6 +107,123 @@ export async function apiJson<T>(path: string, options: ApiJsonOptions = {}): Pr
     return doApiJson<T>(path, options, false);
 }
 
+export type ApiBlobResult = {
+    blob: Blob;
+    filename: string;
+};
+
+export type ApiBlobOptions = ApiJsonOptions & {
+    /** Fallback filename when Content-Disposition is missing. */
+    fallbackFilename?: string;
+};
+
+/**
+ * Binary `fetch` wrapper (PDF/CSV downloads). Same auth + 401 refresh behavior as {@link apiJson}.
+ */
+export async function apiBlob(path: string, options: ApiBlobOptions = {}): Promise<ApiBlobResult> {
+    return doApiBlob(path, options, false);
+}
+
+/** Trigger a browser file download from an in-memory blob. */
+export function triggerBlobDownload(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.rel = 'noopener';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+}
+
+function parseContentDispositionFilename(
+    header: string | null,
+    fallback: string,
+): string {
+    if (!header) return fallback;
+    const utf8 = /filename\*=UTF-8''([^;]+)/i.exec(header);
+    if (utf8?.[1]) {
+        try {
+            return decodeURIComponent(utf8[1].trim());
+        } catch {
+            return utf8[1].trim();
+        }
+    }
+    const plain = /filename="?([^";]+)"?/i.exec(header);
+    if (plain?.[1]) return plain[1].trim();
+    return fallback;
+}
+
+async function readErrorDetail(response: Response): Promise<string> {
+    let detail = response.statusText;
+    try {
+        const errBody: unknown = await response.json();
+        if (
+            errBody &&
+            typeof errBody === 'object' &&
+            'message' in errBody &&
+            typeof (errBody as { message: unknown }).message === 'string'
+        ) {
+            detail = (errBody as { message: string }).message;
+        }
+    } catch {
+        try {
+            detail = await response.text();
+        } catch {
+            /* keep statusText */
+        }
+    }
+    return detail || `HTTP ${response.status}`;
+}
+
+async function doApiBlob(
+    path: string,
+    options: ApiBlobOptions,
+    isRetry: boolean,
+): Promise<ApiBlobResult> {
+    const { skipAuth, headers: initHeaders, fallbackFilename, ...rest } = options;
+    const headers = new Headers(initHeaders);
+
+    const token = store.getState().auth.token;
+    if (token && !skipAuth) {
+        headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    const response = await fetch(joinUrl(path), {
+        ...rest,
+        headers,
+    });
+
+    if (response.status === 401) {
+        if (
+            !skipAuth &&
+            !isRetry &&
+            !isRefreshTokenPath(path) &&
+            store.getState().auth.refreshToken
+        ) {
+            const refreshed = await tryRefreshSessionOnce();
+            if (refreshed) {
+                return doApiBlob(path, options, true);
+            }
+        }
+        if (!skipAuth) {
+            store.dispatch(logout());
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error(await readErrorDetail(response));
+    }
+
+    const blob = await response.blob();
+    const filename = parseContentDispositionFilename(
+        response.headers.get('content-disposition'),
+        fallbackFilename ?? 'download.pdf',
+    );
+    return { blob, filename };
+}
+
 async function doApiJson<T>(path: string, options: ApiJsonOptions, isRetry: boolean): Promise<T> {
     const { skipAuth, headers: initHeaders, ...rest } = options;
     const headers = new Headers(initHeaders);
@@ -147,25 +264,7 @@ async function doApiJson<T>(path: string, options: ApiJsonOptions, isRetry: bool
     }
 
     if (!response.ok) {
-        let detail = response.statusText;
-        try {
-            const errBody: unknown = await response.json();
-            if (
-                errBody &&
-                typeof errBody === 'object' &&
-                'message' in errBody &&
-                typeof (errBody as { message: unknown }).message === 'string'
-            ) {
-                detail = (errBody as { message: string }).message;
-            }
-        } catch {
-            try {
-                detail = await response.text();
-            } catch {
-                /* keep statusText */
-            }
-        }
-        throw new Error(detail || `HTTP ${response.status}`);
+        throw new Error(await readErrorDetail(response));
     }
 
     if (response.status === 204) {
