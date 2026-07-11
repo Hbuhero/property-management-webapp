@@ -3,7 +3,7 @@ import {
     createManualInvoice,
     fetchBillablePeriods,
     fetchInvoice,
-    fetchInvoices,
+    fetchInvoicePage,
     markInvoicePaid,
     payMobileInvoice,
 } from '@/api/invoiceApi';
@@ -16,16 +16,37 @@ import type {
 export const invoiceKeys = {
     all: ['invoices'] as const,
     list: (filters?: InvoiceListFilters) =>
-        [...invoiceKeys.all, 'list', filters?.status ?? 'all', filters?.leaseContractId ?? 'all'] as const,
+        [
+            ...invoiceKeys.all,
+            'list',
+            filters?.status ?? 'all',
+            filters?.leaseContractId ?? 'all',
+            filters?.from ?? '',
+            filters?.to ?? '',
+            filters?.page ?? 'all',
+            filters?.size ?? 'all',
+            filters?.sortBy ?? 'dueDate',
+            filters?.sortDirection ?? 'DESC',
+        ] as const,
     detail: (id: number | string) => [...invoiceKeys.all, 'detail', String(id)] as const,
     billablePeriods: (contractId: number | string) =>
         ['billable-periods', String(contractId)] as const,
 };
 
+/** Full page payload (records + pagination meta). */
+export function useInvoicePage(filters?: InvoiceListFilters) {
+    return useQuery({
+        queryKey: invoiceKeys.list(filters),
+        queryFn: () => fetchInvoicePage(filters),
+    });
+}
+
+/** Records-only convenience — shares cache with {@link useInvoicePage}. */
 export function useInvoices(filters?: InvoiceListFilters) {
     return useQuery({
         queryKey: invoiceKeys.list(filters),
-        queryFn: () => fetchInvoices(filters),
+        queryFn: () => fetchInvoicePage(filters),
+        select: (page) => page.records,
     });
 }
 

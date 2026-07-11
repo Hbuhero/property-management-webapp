@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
 import { motion } from 'framer-motion';
+import type { DateRange } from 'react-day-picker';
 import { PageBackLink } from '@/components/dashboard/PageBackLink';
 import {
     Bar,
@@ -13,26 +15,47 @@ import {
     YAxis,
 } from 'recharts';
 import { Button } from '@/components/ui/button';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { formatInvoiceDate, formatInvoiceMoney } from '@/components/invoices/invoiceFormat';
+import { InvoiceListPagination } from '@/components/invoices/InvoiceListPagination';
 import { InvoiceListWithDetail } from '@/components/invoices/InvoiceListWithDetail';
+import { InvoiceStatusFilter } from '@/components/invoices/InvoiceStatusFilter';
 import { MarkPaidConfirmDialog } from '@/components/invoices/MarkPaidConfirmDialog';
 import { OwnerFinancesNav } from '@/components/invoices/OwnerFinancesNav';
 import { DownloadReportButton } from '@/components/reports/DownloadReportButton';
 import { paidRevenueByMonth, sumPaidInvoiceAmount } from '@/lib/invoiceAnalytics';
 import { sumPendingInvoiceAmount } from '@/lib/tenantBilling';
-import { useInvoices } from '@/queries/invoice.queries';
+import { useInvoicePage, useInvoices } from '@/queries/invoice.queries';
 import {
     useDownloadFinancialSummaryPdf,
     useDownloadInvoiceListPdf,
     useDownloadInvoicePdf,
 } from '@/queries/report.queries';
-import type { Invoice } from '@/schemas/invoice.schema';
+import type {
+    Invoice,
+    InvoiceListFilters,
+    InvoiceStatusFilterValue,
+} from '@/schemas/invoice.schema';
+
+const PAGE_SIZE = 10;
 
 const fadeUp = {
     initial: { opacity: 0, y: 16 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.35, ease: 'easeOut' as const },
 };
+
+function toIsoDate(value: Date | undefined): string | undefined {
+    if (!value) return undefined;
+    return format(value, 'yyyy-MM-dd');
+}
+
+function totalPagesFromMeta(pageCount: string | undefined): number {
+    const raw = Number(pageCount ?? '0');
+    if (!Number.isFinite(raw)) return 1;
+    // Backend stores pageCount as totalPages - 1 (see Pagination.java).
+    return Math.max(1, raw + 1);
+}
 
 const FinancialReports = () => {
     const { t } = useTranslation();
@@ -41,36 +64,65 @@ const FinancialReports = () => {
     const [searchParams] = useSearchParams();
     const contractFilter = searchParams.get('leaseContractId');
     const leaseContractId = contractFilter ? Number(contractFilter) : undefined;
-    const filters =
+    const leaseScope =
         leaseContractId != null && Number.isFinite(leaseContractId)
             ? { leaseContractId }
             : undefined;
 
-    const allQuery = useInvoices();
-    const pendingQuery = useInvoices({ status: 'PENDING', ...filters });
-    const paidQuery = useInvoices({ status: 'PAID', ...filters });
+    const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilterValue>('ALL');
+    const [dateRange, setDateRange] = useState<DateRange | undefined>();
+    const [page, setPage] = useState(1);
+    const [markPaidInvoice, setMarkPaidInvoice] = useState<Invoice | null>(null);
+
+    const pendingQuery = useInvoices({ status: 'PENDING', ...leaseScope });
+    const paidQuery = useInvoices({ status: 'PAID', ...leaseScope });
+
+    const historyFilters = useMemo<InvoiceListFilters>(() => {
+        const filters: InvoiceListFilters = {
+            page,
+            size: PAGE_SIZE,
+            sortBy: 'dueDate',
+            sortDirection: 'DESC',
+            ...leaseScope,
+        };
+        if (statusFilter !== 'ALL') filters.status = statusFilter;
+        const from = toIsoDate(dateRange?.from);
+        const to = toIsoDate(dateRange?.to);
+        if (from) filters.from = from;
+        if (to) filters.to = to;
+        return filters;
+    }, [statusFilter, dateRange, page, leaseScope?.leaseContractId]);
+
+    const historyQuery = useInvoicePage(historyFilters);
 
     const downloadInvoice = useDownloadInvoicePdf();
     const downloadInvoiceList = useDownloadInvoiceListPdf();
     const downloadFinancialSummary = useDownloadFinancialSummaryPdf();
 
-    const [markPaidInvoice, setMarkPaidInvoice] = useState<Invoice | null>(null);
-
-    const allInvoices = allQuery.data ?? [];
     const pending = useMemo(() => pendingQuery.data ?? [], [pendingQuery.data]);
     const paid = useMemo(() => paidQuery.data ?? [], [paidQuery.data]);
+    const history = historyQuery.data?.records ?? [];
+    const resolvedTotalPages = totalPagesFromMeta(historyQuery.data?.page.pageCount);
 
     const chartData = useMemo(() => paidRevenueByMonth(paid), [paid]);
     const totalPaid = sumPaidInvoiceAmount(paid);
     const totalOutstanding = sumPendingInvoiceAmount(pending);
-    const currency = allInvoices[0]?.currency ?? 'TZS';
+    const currency = pending[0]?.currency ?? paid[0]?.currency ?? history[0]?.currency ?? 'TZS';
 
-    const listExportFilters = {
-        status: 'PENDING' as const,
-        ...(leaseContractId != null && Number.isFinite(leaseContractId)
-            ? { leaseContractId }
-            : {}),
-    };
+    const listExportFilters = useMemo(() => {
+        const filters: {
+            status?: Invoice['status'];
+            leaseContractId?: number;
+            from?: string;
+            to?: string;
+        } = { ...leaseScope };
+        if (statusFilter !== 'ALL') filters.status = statusFilter;
+        const from = toIsoDate(dateRange?.from);
+        const to = toIsoDate(dateRange?.to);
+        if (from) filters.from = from;
+        if (to) filters.to = to;
+        return filters;
+    }, [statusFilter, dateRange, leaseScope?.leaseContractId]);
 
     return (
         <motion.div {...fadeUp} className="space-y-6">
@@ -212,57 +264,118 @@ const FinancialReports = () => {
             </div>
 
             <section className="rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                <div className="border-b border-slate-200 p-4 dark:border-slate-800">
-                    <h2 className="font-semibold text-slate-950 dark:text-white">All pending invoices</h2>
-                    <p className="text-sm text-slate-500">Confirm cash payments received from tenants.</p>
+                <div className="flex flex-col gap-3 border-b border-slate-200 p-4 dark:border-slate-800">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <h2 className="font-semibold text-slate-950 dark:text-white">
+                                {t('invoices.historyTitle')}
+                            </h2>
+                            <p className="text-sm text-slate-500">{t('invoices.historySubtitle')}</p>
+                        </div>
+                        <InvoiceStatusFilter
+                            value={statusFilter}
+                            onChange={(value) => {
+                                setStatusFilter(value);
+                                setPage(1);
+                            }}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div className="min-w-[260px] flex-1">
+                            <DateRangePicker
+                                date={dateRange}
+                                setDate={(range) => {
+                                    setDateRange(range);
+                                    setPage(1);
+                                }}
+                            />
+                        </div>
+                        {dateRange?.from ? (
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                    setDateRange(undefined);
+                                    setPage(1);
+                                }}
+                            >
+                                {t('invoices.clearDates')}
+                            </Button>
+                        ) : null}
+                    </div>
                 </div>
                 <div className="p-4">
-                    <InvoiceListWithDetail
-                        invoices={pending}
-                        isLoading={pendingQuery.isPending}
-                        emptyMessage="No outstanding invoices."
-                        renderActions={(invoice) => (
-                            <div className="flex flex-wrap items-center gap-2">
-                                <DownloadReportButton
-                                    size="sm"
-                                    hideIcon
-                                    label={t('reports.downloadInvoice')}
-                                    isLoading={
-                                        downloadInvoice.isPending &&
-                                        downloadInvoice.variables === invoice.id
-                                    }
-                                    onDownload={() => downloadInvoice.mutateAsync(invoice.id)}
-                                />
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setMarkPaidInvoice(invoice)}
-                                >
-                                    Mark paid
-                                </Button>
-                            </div>
-                        )}
-                        renderDetailActions={(invoice) => (
-                            <div className="flex flex-col gap-2">
-                                <DownloadReportButton
-                                    label={t('reports.downloadInvoice')}
-                                    isLoading={
-                                        downloadInvoice.isPending &&
-                                        downloadInvoice.variables === invoice.id
-                                    }
-                                    onDownload={() => downloadInvoice.mutateAsync(invoice.id)}
-                                />
-                                <Button
-                                    type="button"
-                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
-                                    onClick={() => setMarkPaidInvoice(invoice)}
-                                >
-                                    Mark as paid
-                                </Button>
-                            </div>
-                        )}
-                    />
+                    {historyQuery.isError ? (
+                        <p className="text-sm text-red-600">
+                            {historyQuery.error instanceof Error
+                                ? historyQuery.error.message
+                                : 'Could not load invoices'}
+                        </p>
+                    ) : (
+                        <>
+                            <InvoiceListWithDetail
+                                invoices={history}
+                                isLoading={historyQuery.isPending}
+                                emptyMessage={t('invoices.emptyHistory')}
+                                renderActions={(invoice) => (
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <DownloadReportButton
+                                            size="sm"
+                                            hideIcon
+                                            label={t('reports.downloadInvoice')}
+                                            isLoading={
+                                                downloadInvoice.isPending &&
+                                                downloadInvoice.variables === invoice.id
+                                            }
+                                            onDownload={() => downloadInvoice.mutateAsync(invoice.id)}
+                                        />
+                                        {invoice.status === 'PENDING' ? (
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => setMarkPaidInvoice(invoice)}
+                                            >
+                                                Mark paid
+                                            </Button>
+                                        ) : null}
+                                    </div>
+                                )}
+                                renderDetailActions={(invoice) => (
+                                    <div className="flex flex-col gap-2">
+                                        <DownloadReportButton
+                                            label={t('reports.downloadInvoice')}
+                                            isLoading={
+                                                downloadInvoice.isPending &&
+                                                downloadInvoice.variables === invoice.id
+                                            }
+                                            onDownload={() => downloadInvoice.mutateAsync(invoice.id)}
+                                        />
+                                        {invoice.status === 'PENDING' ? (
+                                            <Button
+                                                type="button"
+                                                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                                onClick={() => setMarkPaidInvoice(invoice)}
+                                            >
+                                                Mark as paid
+                                            </Button>
+                                        ) : (
+                                            <p className="text-sm text-slate-500">
+                                                {t('invoices.markPaidOnlyPending')}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            />
+                            <InvoiceListPagination
+                                page={page}
+                                totalPages={resolvedTotalPages}
+                                disabled={historyQuery.isPending}
+                                onPageChange={setPage}
+                            />
+                        </>
+                    )}
                 </div>
             </section>
 

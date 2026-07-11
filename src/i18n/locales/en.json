@@ -96,5 +96,22 @@
         "downloadInvoice": "Download invoice",
         "downloadMaintenance": "Download PDF",
         "exportFinancialSummary": "Export financial summary"
+    },
+    "invoices": {
+        "historyTitle": "Invoice history",
+        "historySubtitle": "All invoices for audit — filter by status or due date.",
+        "outstandingTitle": "Outstanding",
+        "emptyHistory": "No invoices match these filters.",
+        "statusFilter": "Status",
+        "filterAll": "All statuses",
+        "filterPending": "Pending",
+        "filterPaid": "Paid",
+        "filterCancelled": "Cancelled",
+        "dateRange": "Due date range",
+        "clearDates": "Clear dates",
+        "pageOf": "Page {{page}} of {{total}}",
+        "prevPage": "Previous",
+        "nextPage": "Next",
+        "markPaidOnlyPending": "Only pending invoices can be marked paid."
     }
 }

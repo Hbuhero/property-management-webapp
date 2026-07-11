@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { LeaseContractStatusSchema } from '@/schemas/leaseContract.schema';
+import { PaginationMetaSchema } from '@/schemas/property.schema';
 
 export const InvoiceStatusSchema = z.enum(['PENDING', 'PAID', 'CANCELLED']);
 export const InvoiceSourceSchema = z.enum(['AUTO', 'MANUAL']);
@@ -57,14 +58,29 @@ export const CreateManualInvoiceSchema = z.object({
     paymentMethod: PaymentMethodSchema,
 });
 
+export const InvoicePageSchema = z.object({
+    page: PaginationMetaSchema,
+    records: z.array(InvoiceSchema),
+});
+
 export type InvoiceStatus = z.infer<typeof InvoiceStatusSchema>;
 export type InvoiceSource = z.infer<typeof InvoiceSourceSchema>;
 export type PaymentMethod = z.infer<typeof PaymentMethodSchema>;
 export type Invoice = z.infer<typeof InvoiceSchema>;
 export type BillablePeriod = z.infer<typeof BillablePeriodSchema>;
 export type CreateManualInvoiceInput = z.infer<typeof CreateManualInvoiceSchema>;
+export type InvoicePage = z.infer<typeof InvoicePageSchema>;
+
+export type InvoiceStatusFilterValue = InvoiceStatus | 'ALL';
 
 export type InvoiceListFilters = {
     status?: InvoiceStatus;
     leaseContractId?: number;
+    from?: string;
+    to?: string;
+    /** 1-based page (matches backend PageableParam). */
+    page?: number;
+    size?: number;
+    sortBy?: string;
+    sortDirection?: 'ASC' | 'DESC';
 };

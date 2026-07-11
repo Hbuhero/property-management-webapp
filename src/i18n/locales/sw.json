@@ -96,5 +96,22 @@
         "downloadInvoice": "Pakua ankara",
         "downloadMaintenance": "Pakua PDF",
         "exportFinancialSummary": "Hamisha muhtasari wa fedha"
+    },
+    "invoices": {
+        "historyTitle": "Historia ya ankara",
+        "historySubtitle": "Ankara zote kwa ukaguzi — chuja kwa hali au tarehe ya malipo.",
+        "outstandingTitle": "Zinazosubiri",
+        "emptyHistory": "Hakuna ankara zinazolingana na vichujio hivi.",
+        "statusFilter": "Hali",
+        "filterAll": "Hali zote",
+        "filterPending": "Inasubiri",
+        "filterPaid": "Imelipwa",
+        "filterCancelled": "Imeghairiwa",
+        "dateRange": "Kipindi cha tarehe ya malipo",
+        "clearDates": "Futa tarehe",
+        "pageOf": "Ukurasa {{page}} kati ya {{total}}",
+        "prevPage": "Iliyotangulia",
+        "nextPage": "Ifuatayo",
+        "markPaidOnlyPending": "Ankara zinazosubiri tu ndizo zinazoweza kuwekwa kuwa zimelipwa."
     }
 }
