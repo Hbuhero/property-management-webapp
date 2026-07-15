@@ -5,11 +5,13 @@ import {
     BillablePeriodSchema,
     CreateManualInvoiceSchema,
     InvoicePageSchema,
+    InvoicePaymentStatusSchema,
     InvoiceSchema,
     type CreateManualInvoiceInput,
     type Invoice,
     type InvoiceListFilters,
     type InvoicePage,
+    type InvoicePaymentStatus,
     type BillablePeriod,
 } from '@/schemas/invoice.schema';
 
@@ -69,9 +71,25 @@ export async function createManualInvoice(body: CreateManualInvoiceInput): Promi
     return InvoiceSchema.parse(raw);
 }
 
-export async function payMobileInvoice(id: number | string): Promise<Invoice> {
-    const raw = await apiJson<unknown>(`${invoicePath(id)}/pay-mobile`, { method: 'POST' });
+/** Generate (or return existing) SPG control number for a MOBILE invoice. */
+export async function initiatePayment(id: number | string): Promise<Invoice> {
+    const raw = await apiJson<unknown>(`${invoicePath(id)}/initiate-payment`, { method: 'POST' });
     return InvoiceSchema.parse(raw);
+}
+
+/** Poll SPG payment status and sync local invoice. */
+export async function fetchPaymentStatus(id: number | string): Promise<InvoicePaymentStatus> {
+    const raw = await apiJson<unknown>(`${invoicePath(id)}/payment-status`, { method: 'GET' });
+    return InvoicePaymentStatusSchema.parse(raw);
+}
+
+/**
+ * Demo harness: post bank notification to SPG, then sync.
+ * Backend returns 403 when {@code spg.demo-bank-notify-enabled} is false.
+ */
+export async function demoBankNotify(id: number | string): Promise<InvoicePaymentStatus> {
+    const raw = await apiJson<unknown>(`${invoicePath(id)}/demo-bank-notify`, { method: 'POST' });
+    return InvoicePaymentStatusSchema.parse(raw);
 }
 
 export async function markInvoicePaid(id: number | string): Promise<Invoice> {

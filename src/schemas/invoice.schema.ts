@@ -36,10 +36,23 @@ export const InvoiceSchema = z.object({
     paidAt: z.string().nullable().optional(),
     markedPaidBy: z.number().nullable().optional(),
     createdBy: z.number().nullable().optional(),
+    paymentReference: z.string().nullable().optional(),
+    gatewayPaidAmount: z.number().nullable().optional(),
+    gatewayReceipt: z.string().nullable().optional(),
+    gatewayTransactionId: z.string().nullable().optional(),
+    paymentInitiatedAt: z.string().nullable().optional(),
     contract: InvoiceContractSummarySchema.nullable().optional(),
     item: InvoiceItemSummarySchema.nullable().optional(),
     createdAt: z.string().nullable().optional(),
     updatedAt: z.string().nullable().optional(),
+});
+
+export const InvoicePaymentStatusSchema = z.object({
+    invoice: InvoiceSchema,
+    gatewayPaid: z.boolean(),
+    billAmount: z.number(),
+    paidAmount: z.number(),
+    paymentReference: z.string().nullable().optional(),
 });
 
 export const BillablePeriodSchema = z.object({
@@ -67,6 +80,7 @@ export type InvoiceStatus = z.infer<typeof InvoiceStatusSchema>;
 export type InvoiceSource = z.infer<typeof InvoiceSourceSchema>;
 export type PaymentMethod = z.infer<typeof PaymentMethodSchema>;
 export type Invoice = z.infer<typeof InvoiceSchema>;
+export type InvoicePaymentStatus = z.infer<typeof InvoicePaymentStatusSchema>;
 export type BillablePeriod = z.infer<typeof BillablePeriodSchema>;
 export type CreateManualInvoiceInput = z.infer<typeof CreateManualInvoiceSchema>;
 export type InvoicePage = z.infer<typeof InvoicePageSchema>;

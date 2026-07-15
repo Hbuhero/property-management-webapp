@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import {
     createManualInvoice,
+    demoBankNotify,
     fetchBillablePeriods,
     fetchInvoice,
     fetchInvoicePage,
+    fetchPaymentStatus,
+    initiatePayment,
     markInvoicePaid,
-    payMobileInvoice,
 } from '@/api/invoiceApi';
 import { leaseContractKeys } from '@/queries/leaseContract.queries';
 import type {
@@ -29,6 +31,8 @@ export const invoiceKeys = {
             filters?.sortDirection ?? 'DESC',
         ] as const,
     detail: (id: number | string) => [...invoiceKeys.all, 'detail', String(id)] as const,
+    paymentStatus: (id: number | string) =>
+        [...invoiceKeys.all, 'payment-status', String(id)] as const,
     billablePeriods: (contractId: number | string) =>
         ['billable-periods', String(contractId)] as const,
 };
@@ -69,6 +73,30 @@ export function useBillablePeriods(contractId: number | string | undefined) {
     });
 }
 
+type PaymentStatusOptions = {
+    /** When false, the query does not run. Default: true when id is set. */
+    enabled?: boolean;
+    /** Poll interval while waiting for gateway confirmation. Use `false` to disable. */
+    refetchInterval?: number | false;
+};
+
+/**
+ * Polls {@code GET /invoices/{id}/payment-status}.
+ * Typical usage: enable while the online-pay dialog is open and status is still pending.
+ */
+export function usePaymentStatus(
+    id: number | string | undefined,
+    options?: PaymentStatusOptions,
+) {
+    const enabled = id != null && (options?.enabled ?? true);
+    return useQuery({
+        queryKey: id != null ? invoiceKeys.paymentStatus(id) : [...invoiceKeys.all, 'payment-status', 'missing'],
+        queryFn: () => fetchPaymentStatus(id as number | string),
+        enabled,
+        refetchInterval: options?.refetchInterval ?? false,
+    });
+}
+
 function invalidateInvoiceSurfaces(qc: QueryClient, contractId?: number) {
     void qc.invalidateQueries({ queryKey: invoiceKeys.all });
     void qc.invalidateQueries({ queryKey: leaseContractKeys.all });
@@ -87,14 +115,33 @@ export function useCreateManualInvoice() {
     });
 }
 
-export function usePayMobileInvoice() {
+export function useInitiatePayment() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (id: number | string) => payMobileInvoice(id),
+        mutationFn: (id: number | string) => initiatePayment(id),
         onSuccess: (data) => {
             invalidateInvoiceSurfaces(qc, data.contract?.id);
+            void qc.invalidateQueries({ queryKey: invoiceKeys.paymentStatus(data.id) });
         },
     });
+}
+
+export function useDemoBankNotify() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number | string) => demoBankNotify(id),
+        onSuccess: (data) => {
+            invalidateInvoiceSurfaces(qc, data.invoice.contract?.id);
+            void qc.invalidateQueries({ queryKey: invoiceKeys.paymentStatus(data.invoice.id) });
+        },
+    });
+}
+
+/**
+ * @deprecated Use {@link useInitiatePayment}. Kept so MobilePayDialog compiles until the online-pay UI lands.
+ */
+export function usePayMobileInvoice() {
+    return useInitiatePayment();
 }
 
 export function useMarkInvoicePaid() {
