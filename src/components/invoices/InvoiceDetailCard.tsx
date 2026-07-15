@@ -30,8 +30,20 @@ export function InvoiceDetailCard({ invoice, actions }: Props) {
                 <div className="grid gap-3 sm:grid-cols-2">
                     <DetailField label="Amount" value={formatInvoiceMoney(invoice.amount, invoice.currency)} />
                     <DetailField label="Due date" value={formatInvoiceDate(invoice.dueDate)} />
-                    <DetailField label="Payment method" value={invoice.paymentMethod} />
+                    <DetailField
+                        label="Payment method"
+                        value={invoice.paymentMethod === 'MOBILE' ? 'Online' : invoice.paymentMethod}
+                    />
                     <DetailField label="Source" value={invoice.source} />
+                    {invoice.paymentReference ? (
+                        <DetailField label="Control number" value={invoice.paymentReference} />
+                    ) : null}
+                    {invoice.gatewayPaidAmount != null && invoice.gatewayPaidAmount > 0 ? (
+                        <DetailField
+                            label="Gateway paid"
+                            value={formatInvoiceMoney(invoice.gatewayPaidAmount, invoice.currency)}
+                        />
+                    ) : null}
                     {invoice.paidAt ? (
                         <DetailField label="Paid at" value={formatInvoiceDate(invoice.paidAt)} />
                     ) : null}

@@ -80,7 +80,7 @@ function leaseProgress(startDate: string, endDate: string): { percent: number; l
 }
 
 function paymentMethodLabel(method: string): string {
-    return method === 'MOBILE' ? 'M-Pesa' : method === 'CASH' ? 'Cash' : method;
+    return method === 'MOBILE' ? 'Online' : method === 'CASH' ? 'Cash' : method;
 }
 
 function isOpenStatus(status: MaintenanceStatus): boolean {

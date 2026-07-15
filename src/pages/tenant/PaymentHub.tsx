@@ -11,7 +11,7 @@ import { formatInvoiceDate, formatInvoiceMoney } from '@/components/invoices/inv
 import { InvoiceListPagination } from '@/components/invoices/InvoiceListPagination';
 import { InvoiceListWithDetail } from '@/components/invoices/InvoiceListWithDetail';
 import { InvoiceStatusFilter } from '@/components/invoices/InvoiceStatusFilter';
-import { MobilePayDialog } from '@/components/invoices/MobilePayDialog';
+import { OnlinePaymentDialog } from '@/components/invoices/OnlinePaymentDialog';
 import { RequestInvoiceDialog } from '@/components/invoices/RequestInvoiceDialog';
 import { DownloadReportButton } from '@/components/reports/DownloadReportButton';
 import { earliestInvoiceDueDate, sumPendingInvoiceAmount } from '@/lib/tenantBilling';
@@ -97,7 +97,7 @@ const PaymentHub = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Payment Hub</h1>
                     <p className="mt-1 text-sm text-slate-500">
-                        Pay mobile invoices or request a manual bill for your active lease.
+                        Pay online invoices or request a manual bill for your active lease.
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -233,7 +233,7 @@ const PaymentHub = () => {
                                                 className="bg-emerald-600 text-white hover:bg-emerald-700"
                                                 onClick={() => setPayInvoice(invoice)}
                                             >
-                                                Pay
+                                                Pay online
                                             </Button>
                                         ) : invoice.status === 'PENDING' ? (
                                             <span className="text-xs text-slate-500">Cash · owner confirms</span>
@@ -257,7 +257,7 @@ const PaymentHub = () => {
                                                 className="bg-emerald-600 text-white hover:bg-emerald-700"
                                                 onClick={() => setPayInvoice(invoice)}
                                             >
-                                                Pay with mobile money
+                                                Pay online
                                             </Button>
                                         ) : invoice.status === 'PENDING' ? (
                                             <p className="text-sm text-slate-500">
@@ -287,7 +287,7 @@ const PaymentHub = () => {
                 />
             ) : null}
 
-            <MobilePayDialog
+            <OnlinePaymentDialog
                 invoice={payInvoice}
                 open={payInvoice != null}
                 onOpenChange={(open) => {

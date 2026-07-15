@@ -125,7 +125,7 @@ export function RequestInvoiceDialog({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="MOBILE">Mobile (M-Pesa / Tigo)</SelectItem>
+                                <SelectItem value="MOBILE">Online (control number)</SelectItem>
                                 <SelectItem value="CASH">Cash (owner confirmation)</SelectItem>
                             </SelectContent>
                         </Select>

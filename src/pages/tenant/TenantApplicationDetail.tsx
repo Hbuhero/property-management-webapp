@@ -25,7 +25,7 @@ import {
     useRejectLeaseContract,
 } from '@/queries/leaseContract.queries';
 import { InvoiceListWithDetail } from '@/components/invoices/InvoiceListWithDetail';
-import { MobilePayDialog } from '@/components/invoices/MobilePayDialog';
+import { OnlinePaymentDialog } from '@/components/invoices/OnlinePaymentDialog';
 import { RequestInvoiceDialog } from '@/components/invoices/RequestInvoiceDialog';
 import { formatInvoiceMoney } from '@/components/invoices/invoiceFormat';
 import { DownloadReportButton } from '@/components/reports/DownloadReportButton';
@@ -330,7 +330,7 @@ function ContractInvoiceSection({ contract }: { contract: LeaseContract }) {
                                     className="bg-emerald-600 text-white hover:bg-emerald-700"
                                     onClick={() => setPayInvoice(invoice)}
                                 >
-                                    Pay with mobile money
+                                    Pay online
                                 </Button>
                             ) : invoice.status === 'PENDING' && invoice.paymentMethod === 'CASH' ? (
                                 <p className="text-sm text-slate-500">
@@ -347,7 +347,7 @@ function ContractInvoiceSection({ contract }: { contract: LeaseContract }) {
                 open={requestOpen}
                 onOpenChange={setRequestOpen}
             />
-            <MobilePayDialog
+            <OnlinePaymentDialog
                 invoice={payInvoice}
                 open={payInvoice != null}
                 onOpenChange={(open) => {

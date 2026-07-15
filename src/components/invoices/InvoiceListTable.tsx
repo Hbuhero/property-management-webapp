@@ -87,7 +87,7 @@ export function InvoiceListTable({
                                 {formatInvoiceMoney(invoice.amount, invoice.currency)}
                             </TableCell>
                             <TableCell className="text-slate-600 dark:text-slate-300">
-                                {invoice.paymentMethod}
+                                {invoice.paymentMethod === 'MOBILE' ? 'Online' : invoice.paymentMethod}
                             </TableCell>
                             <TableCell>
                                 <InvoiceStatusBadge status={invoice.status} />

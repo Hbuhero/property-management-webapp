@@ -137,13 +137,6 @@ export function useDemoBankNotify() {
     });
 }
 
-/**
- * @deprecated Use {@link useInitiatePayment}. Kept so MobilePayDialog compiles until the online-pay UI lands.
- */
-export function usePayMobileInvoice() {
-    return useInitiatePayment();
-}
-
 export function useMarkInvoicePaid() {
     const qc = useQueryClient();
     return useMutation({
