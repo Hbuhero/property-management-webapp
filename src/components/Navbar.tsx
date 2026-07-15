@@ -203,7 +203,7 @@ const Navbar = () => {
               <Building2 className="text-white w-5 h-5" />
             </div>
             <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white transition-colors duration-200">
-              PM<span className="text-emerald-600 dark:text-emerald-400">S</span>
+              Alcove <span className="text-emerald-600 dark:text-emerald-400">PMS</span>
             </span>
           </Link>
 

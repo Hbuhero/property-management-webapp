@@ -88,7 +88,7 @@ export default function RegisterPage() {
             >
                 <div className="flex items-center gap-2 mb-6 text-emerald-600">
                     <Building2 className="h-8 w-8" />
-                    <span className="text-lg font-bold text-slate-900 dark:text-white">PMS</span>
+                    <span className="text-lg font-bold text-slate-900 dark:text-white">Alcove PMS</span>
                 </div>
                 <h1 className="text-2xl font-bold text-emerald-600">{t('auth.registerTitle')}</h1>
                 <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 mb-8">{t('auth.registerSubtitle')}</p>

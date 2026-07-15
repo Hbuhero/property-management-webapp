@@ -1,6 +1,6 @@
 {
     "common": {
-        "appName": "PMS",
+        "appName": "Alcove PMS",
         "login": "Ingia",
         "logout": "Toka",
         "loading": "Inapakia...",
@@ -18,7 +18,7 @@
     },
     "auth": {
         "loginTitle": "Karibu Tena",
-        "loginSubtitle": "Ingia kwenye akaunti yako ya PMS",
+        "loginSubtitle": "Ingia kwenye akaunti yako ya Alcove PMS",
         "loginSuccess": "Umeingia mfumo!",
         "loginError": "Barua pepe au nenosiri si sahihi.",
         "logoutSuccess": "Umetoka mfumoni.",

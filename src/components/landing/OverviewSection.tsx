@@ -16,13 +16,13 @@ const OverviewSection = () => {
                             System Overview
                         </h4>
                         <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 leading-tight">
-                            Property Management System
+                            Alcove PMS
                         </h2>
                         <p className="text-lg text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
-                            Our Property Management System (PMS) is a modern, centralized platform dedicated to eliminating the complexities and stress of property ownership and tenancy in Tanzania. Our goal is to digitize every aspect of property management, from seamless tenant onboarding to transparent financial reporting.
+                            Alcove PMS is a modern, centralized platform dedicated to eliminating the complexities and stress of property ownership and tenancy in Tanzania. Our goal is to digitize every aspect of property management, from seamless tenant onboarding to transparent financial reporting.
                         </p>
                         <p className="text-lg text-slate-600 dark:text-slate-300 mb-8 leading-relaxed">
-                            By automating rent collection, tracking maintenance requests, and maintaining a secure cloud database for all stakeholders, the PMS aims to deliver efficient operations, predictable cash flow, and improved satisfaction for both property owners and tenants alike.
+                            By automating rent collection, tracking maintenance requests, and maintaining a secure cloud database for all stakeholders, Alcove PMS aims to deliver efficient operations, predictable cash flow, and improved satisfaction for both property owners and tenants alike.
                         </p>
 
                         <div className="grid grid-cols-2 gap-8 pt-4 border-t border-slate-100 dark:border-slate-800">

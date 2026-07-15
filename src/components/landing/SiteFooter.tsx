@@ -21,7 +21,7 @@ const SiteFooter = () => {
                                 <Building2 size={20} />
                             </motion.div>
                             <span className="text-xl font-bold text-white tracking-tight">
-                                PM<span className="text-emerald-500">S</span>
+                                Alcove <span className="text-emerald-500">PMS</span>
                             </span>
                         </Link>
                         <p className="text-sm text-slate-400 leading-relaxed font-medium">
@@ -128,7 +128,7 @@ const SiteFooter = () => {
 
                 <div className="pt-8 border-t border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-xs text-slate-500 font-medium">
-                        &copy; {new Date().getFullYear()} Property Management System (PMS). All rights reserved.
+                        &copy; {new Date().getFullYear()} Alcove PMS. All rights reserved.
                     </p>
                     <div className="flex items-center gap-6">
                         <a href="#" className="text-xs text-slate-500 hover:text-slate-300 font-medium transition-colors">Privacy Policy</a>

@@ -67,13 +67,13 @@ export default function LoginPage() {
                                 <Building2 className="h-12 w-12 text-white" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-white">PMS</h2>
+                                <h2 className="text-2xl font-bold text-white">Alcove PMS</h2>
                                 <p className="text-white/80 mt-2 text-sm">Property Management Platform</p>
                             </div>
                             {/* Demo credentials hint */}
                             <div className="text-left w-full bg-white/10 rounded-xl p-4 text-xs text-white/80 space-y-1">
                                 <p className="font-semibold text-white mb-2">Backend sign-in</p>
-                                <p>Use an active account from your PMS database. API base URL defaults to http://localhost:8080 unless you set VITE_API_BASE_URL.</p>
+                                <p>Use an active account from your Alcove PMS database. API base URL defaults to http://localhost:8080 unless you set VITE_API_BASE_URL.</p>
                             </div>
                         </div>
                     </div>

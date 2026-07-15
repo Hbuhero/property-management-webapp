@@ -3,7 +3,7 @@ that acts as a payment gateway/billing system for a
 school/institution system to the NMB.
 ENDPOINTS:
 BASE_URL=https://xyz.spg.co.tz/ "client_usr": "user@zalongwa.com",
-"client_key": "MzingawaPassword"
+"client_key": "xxxxxxxxxx"
 Route | Purpose
 POST api/v1/login API token generation
 Live endpoints (post data to Invoices and Transactions tables)

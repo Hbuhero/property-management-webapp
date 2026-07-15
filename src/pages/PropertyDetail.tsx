@@ -393,7 +393,7 @@ const PropertyDetail = () => {
 
                             <div className="mt-6 flex items-center text-xs text-slate-400 justify-center">
                                 <ShieldCheck size={14} className="mr-1" />
-                                Verified by PMS
+                                Verified by Alcove PMS
                             </div>
                         </div>
                     </div>

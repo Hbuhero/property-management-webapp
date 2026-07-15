@@ -1,6 +1,6 @@
 {
     "common": {
-        "appName": "PMS",
+        "appName": "Alcove PMS",
         "login": "Login",
         "logout": "Logout",
         "loading": "Loading...",
@@ -18,7 +18,7 @@
     },
     "auth": {
         "loginTitle": "Welcome Back",
-        "loginSubtitle": "Sign in to your PMS account",
+        "loginSubtitle": "Sign in to your Alcove PMS account",
         "loginSuccess": "Login successful!",
         "loginError": "Invalid email or password.",
         "logoutSuccess": "You have been logged out.",
