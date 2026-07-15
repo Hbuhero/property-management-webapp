@@ -12,11 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { formatInvoiceDate, formatInvoiceMoney } from '@/components/invoices/invoiceFormat';
 import { showError, showInfo, showSuccess } from '@/lib/toast';
-import {
-    useDemoBankNotify,
-    useInitiatePayment,
-    usePaymentStatus,
-} from '@/queries/invoice.queries';
+import { useInitiatePayment, usePaymentStatus } from '@/queries/invoice.queries';
 import type { Invoice } from '@/schemas/invoice.schema';
 
 type Props = {
@@ -28,10 +24,8 @@ type Props = {
 
 export function OnlinePaymentDialog({ invoice, open, onOpenChange, onPaid }: Props) {
     const { mutateAsync: initiatePayment, isPending: isInitiating } = useInitiatePayment();
-    const demoNotifyMut = useDemoBankNotify();
     const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
     const [copied, setCopied] = useState(false);
-    const [demoNotifyAvailable, setDemoNotifyAvailable] = useState(true);
     const celebratedRef = useRef(false);
     const initiatedForIdRef = useRef<number | null>(null);
 
@@ -50,7 +44,6 @@ export function OnlinePaymentDialog({ invoice, open, onOpenChange, onPaid }: Pro
         }
         celebratedRef.current = false;
         setCopied(false);
-        setDemoNotifyAvailable(true);
         setActiveInvoice(invoice);
         // Intentionally seed once per open/invoice id — avoid wiping control number on parent refetches.
         // eslint-disable-next-line react-hooks/exhaustive-deps -- invoice snapshot on open
@@ -111,47 +104,14 @@ export function OnlinePaymentDialog({ invoice, open, onOpenChange, onPaid }: Pro
         }
     };
 
-    const handleDemoNotify = async () => {
-        if (!activeInvoice) return;
-        try {
-            const status = await demoNotifyMut.mutateAsync(activeInvoice.id);
-            setActiveInvoice(status.invoice);
-            if (status.gatewayPaid || status.invoice.status === 'PAID') {
-                if (!celebratedRef.current) {
-                    celebratedRef.current = true;
-                    confetti({
-                        particleCount: 150,
-                        spread: 70,
-                        origin: { y: 0.6 },
-                        colors: ['#10b981', '#059669', '#34d399'],
-                    });
-                    showSuccess('Payment confirmed.');
-                    onPaid?.(status.invoice);
-                }
-                onOpenChange(false);
-            } else {
-                showInfo('Demo bank notification sent. Waiting for confirmation…');
-            }
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Demo bank notify failed.';
-            if (/disabled|403|Forbidden/i.test(message)) {
-                setDemoNotifyAvailable(false);
-                showError('Demo bank notify is disabled on the server.');
-                return;
-            }
-            showError(message);
-        }
-    };
-
     const initiating = isInitiating || (open && !!invoice && !paymentReference);
     const paidAmount = statusQuery.data?.paidAmount ?? activeInvoice?.gatewayPaidAmount ?? 0;
-    const busy = isInitiating || demoNotifyMut.isPending;
 
     return (
         <Dialog
             open={open}
             onOpenChange={(next) => {
-                if (!busy) onOpenChange(next);
+                if (!isInitiating) onOpenChange(next);
             }}
         >
             <DialogContent className="sm:max-w-md">
@@ -228,20 +188,7 @@ export function OnlinePaymentDialog({ invoice, open, onOpenChange, onPaid }: Pro
                     )}
                 </div>
 
-                <DialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
-                    {demoNotifyAvailable && paymentReference && !isPaid ? (
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            className="w-full"
-                            disabled={busy}
-                            onClick={() => void handleDemoNotify()}
-                        >
-                            {demoNotifyMut.isPending
-                                ? 'Simulating…'
-                                : 'Simulate bank payment (demo)'}
-                        </Button>
-                    ) : null}
+                <DialogFooter>
                     <Button
                         type="button"
                         variant="outline"

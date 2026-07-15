@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import {
     createManualInvoice,
-    demoBankNotify,
     fetchBillablePeriods,
     fetchInvoice,
     fetchInvoicePage,
@@ -122,17 +121,6 @@ export function useInitiatePayment() {
         onSuccess: (data) => {
             invalidateInvoiceSurfaces(qc, data.contract?.id);
             void qc.invalidateQueries({ queryKey: invoiceKeys.paymentStatus(data.id) });
-        },
-    });
-}
-
-export function useDemoBankNotify() {
-    const qc = useQueryClient();
-    return useMutation({
-        mutationFn: (id: number | string) => demoBankNotify(id),
-        onSuccess: (data) => {
-            invalidateInvoiceSurfaces(qc, data.invoice.contract?.id);
-            void qc.invalidateQueries({ queryKey: invoiceKeys.paymentStatus(data.invoice.id) });
         },
     });
 }

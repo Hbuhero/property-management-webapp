@@ -83,15 +83,6 @@ export async function fetchPaymentStatus(id: number | string): Promise<InvoicePa
     return InvoicePaymentStatusSchema.parse(raw);
 }
 
-/**
- * Demo harness: post bank notification to SPG, then sync.
- * Backend returns 403 when {@code spg.demo-bank-notify-enabled} is false.
- */
-export async function demoBankNotify(id: number | string): Promise<InvoicePaymentStatus> {
-    const raw = await apiJson<unknown>(`${invoicePath(id)}/demo-bank-notify`, { method: 'POST' });
-    return InvoicePaymentStatusSchema.parse(raw);
-}
-
 export async function markInvoicePaid(id: number | string): Promise<Invoice> {
     const raw = await apiJson<unknown>(`${invoicePath(id)}/mark-paid`, {
         method: 'PUT',
