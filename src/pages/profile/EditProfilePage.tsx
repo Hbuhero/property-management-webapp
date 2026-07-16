@@ -4,7 +4,7 @@ import { ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { ProfileImageField } from '@/components/auth/ProfileImageField';
-import { uploadListingImage } from '@/api/fileUploadApi';
+import { uploadPublicImage } from '@/api/fileUploadApi';
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppStore';
 import { primaryBackendRole, profilePathForRole } from '@/lib/profilePaths';
 import { resolveUserAvatarUrl } from '@/lib/userAvatarUrl';
@@ -32,7 +32,6 @@ export default function EditProfilePage() {
     const updateMut = useUpdateProfile();
 
     const [name, setName] = useState<string | null>(null);
-    const [email, setEmail] = useState<string | null>(null);
     const [phone, setPhone] = useState<string | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [profileFile, setProfileFile] = useState<File | null>(null);
@@ -42,7 +41,6 @@ export default function EditProfilePage() {
     useEffect(() => {
         if (!profile || initialized) return;
         setName(profile.name);
-        setEmail(profile.email);
         setPhone(profile.phoneNumber ?? '');
         setImagePath(profile.image ?? undefined);
         const resolved = resolveUserAvatarUrl(profile.image);
@@ -57,7 +55,6 @@ export default function EditProfilePage() {
         if (!authUser || !profile) return;
 
         const trimmedName = (name ?? profile.name).trim();
-        const trimmedEmail = (email ?? profile.email).trim();
         const trimmedPhone = (phone ?? profile.phoneNumber ?? '').trim();
 
         if (trimmedPhone.length < 10) {
@@ -68,14 +65,14 @@ export default function EditProfilePage() {
         try {
             let nextImage = imagePath;
             if (profileFile) {
-                nextImage = await uploadListingImage(profileFile);
+                nextImage = await uploadPublicImage(profileFile);
             }
 
             const updated = await updateMut.mutateAsync({
                 id: authUser.id,
                 body: {
                     name: trimmedName,
-                    email: trimmedEmail,
+                    email: profile.email,
                     phoneNumber: trimmedPhone,
                     role: primaryBackendRole(profile.roles),
                     image: nextImage,
@@ -157,12 +154,13 @@ export default function EditProfilePage() {
                 <label className={labelClass}>
                     {t('common.email')}
                     <input
-                        className={inputClass}
+                        className={`${inputClass} cursor-not-allowed bg-slate-50 text-slate-500 dark:bg-slate-900 dark:text-slate-400`}
                         type="email"
-                        value={email ?? ''}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
+                        value={profile.email}
+                        readOnly
+                        aria-readonly="true"
                     />
+                    <span className="mt-1 block text-xs text-slate-400">{t('profile.emailReadOnly')}</span>
                 </label>
 
                 <label className={labelClass}>

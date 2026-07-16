@@ -128,6 +128,7 @@
         "saveError": "Imeshindwa kuhifadhi wasifu wako.",
         "saving": "Inahifadhi…",
         "phoneInvalid": "Weka nambari sahihi ya simu (herufi 10–15).",
-        "roleReadOnly": "Jukumu la akaunti linasimamiwa na msimamizi na haliwezi kubadilishwa hapa."
+        "roleReadOnly": "Jukumu la akaunti linasimamiwa na msimamizi na haliwezi kubadilishwa hapa.",
+        "emailReadOnly": "Barua pepe haiwezi kubadilishwa hapa. Wasiliana na msimamizi ikiwa unahitaji kusasisha."
     }
 }
