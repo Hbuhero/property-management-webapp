@@ -113,5 +113,21 @@
         "prevPage": "Iliyotangulia",
         "nextPage": "Ifuatayo",
         "markPaidOnlyPending": "Ankara zinazosubiri tu ndizo zinazoweza kuwekwa kuwa zimelipwa."
+    },
+    "profile": {
+        "title": "Wasifu wangu",
+        "subtitle": "Maelezo ya akaunti yako na uanachama.",
+        "editProfile": "Hariri wasifu",
+        "editTitle": "Hariri wasifu",
+        "editSubtitle": "Sasisha jina, mawasiliano, na picha yako.",
+        "backToProfile": "Rudi kwenye wasifu",
+        "roles": "Majukumu",
+        "memberSince": "Mwanachama tangu",
+        "loadError": "Imeshindwa kupakia wasifu wako. Jaribu tena.",
+        "saveSuccess": "Wasifu umesasishwa.",
+        "saveError": "Imeshindwa kuhifadhi wasifu wako.",
+        "saving": "Inahifadhi…",
+        "phoneInvalid": "Weka nambari sahihi ya simu (herufi 10–15).",
+        "roleReadOnly": "Jukumu la akaunti linasimamiwa na msimamizi na haliwezi kubadilishwa hapa."
     }
 }

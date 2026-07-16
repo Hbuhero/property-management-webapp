@@ -118,6 +118,18 @@ const router = createBrowserRouter([
                                     Component: (await import('./pages/admin/SecurityLogs')).default,
                                 }),
                             },
+                            {
+                                path: 'profile',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/profile/ProfilePage')).default,
+                                }),
+                            },
+                            {
+                                path: 'profile/edit',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/profile/EditProfilePage')).default,
+                                }),
+                            },
                         ],
                     },
                 ],
@@ -163,6 +175,18 @@ const router = createBrowserRouter([
                                 path: 'maintenance',
                                 lazy: async () => ({
                                     Component: (await import('./pages/tenant/MaintenancePortal')).default,
+                                }),
+                            },
+                            {
+                                path: 'profile',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/profile/ProfilePage')).default,
+                                }),
+                            },
+                            {
+                                path: 'profile/edit',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/profile/EditProfilePage')).default,
                                 }),
                             },
                         ],
@@ -243,6 +267,18 @@ const router = createBrowserRouter([
                                     Component: (await import('./pages/owner/ActiveLeases')).default,
                                 }),
                             },
+                            {
+                                path: 'profile',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/profile/ProfilePage')).default,
+                                }),
+                            },
+                            {
+                                path: 'profile/edit',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/profile/EditProfilePage')).default,
+                                }),
+                            },
                         ],
                     },
                 ],
@@ -317,6 +353,18 @@ const router = createBrowserRouter([
                                 path: 'finances/active-leases',
                                 lazy: async () => ({
                                     Component: (await import('./pages/owner/ActiveLeases')).default,
+                                }),
+                            },
+                            {
+                                path: 'profile',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/profile/ProfilePage')).default,
+                                }),
+                            },
+                            {
+                                path: 'profile/edit',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/profile/EditProfilePage')).default,
                                 }),
                             },
                         ],

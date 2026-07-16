@@ -6,6 +6,7 @@ export const AdminUserRowSchema = z.object({
     name: z.string(),
     email: z.string(),
     phoneNumber: z.string(),
+    image: z.string().nullable().optional(),
     roles: z.array(z.string()),
     permissions: z.string().nullable().optional(),
     status: z.string(),

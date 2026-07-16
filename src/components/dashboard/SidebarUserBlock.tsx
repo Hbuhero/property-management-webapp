@@ -1,8 +1,10 @@
-import { LogOut } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppStore';
 import { useLogout } from '@/hooks/useLogout';
 import { UserAvatar } from '@/components/UserAvatar';
+import { profilePathForRole } from '@/lib/profilePaths';
 
 type SidebarUserBlockProps = {
     roleLabel?: string;
@@ -15,6 +17,7 @@ export function SidebarUserBlock({ roleLabel }: SidebarUserBlockProps) {
 
     if (!user) return null;
 
+    const profilePath = profilePathForRole(user.role);
     const displayRole =
         roleLabel ??
         user.role.charAt(0).toUpperCase() + user.role.slice(1);
@@ -30,6 +33,13 @@ export function SidebarUserBlock({ roleLabel }: SidebarUserBlockProps) {
                     <p className="text-xs text-slate-400 truncate capitalize">{displayRole}</p>
                 </div>
             </div>
+            <Link
+                to={profilePath}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mb-2"
+            >
+                <User className="h-4 w-4 shrink-0" aria-hidden />
+                {t('common.profile')}
+            </Link>
             <button
                 type="button"
                 onClick={handleLogout}

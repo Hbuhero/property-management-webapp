@@ -113,5 +113,21 @@
         "prevPage": "Previous",
         "nextPage": "Next",
         "markPaidOnlyPending": "Only pending invoices can be marked paid."
+    },
+    "profile": {
+        "title": "My profile",
+        "subtitle": "Your account details and membership info.",
+        "editProfile": "Edit profile",
+        "editTitle": "Edit profile",
+        "editSubtitle": "Update your name, contact details, and photo.",
+        "backToProfile": "Back to profile",
+        "roles": "Roles",
+        "memberSince": "Member since",
+        "loadError": "Could not load your profile. Please try again.",
+        "saveSuccess": "Profile updated successfully.",
+        "saveError": "Could not save your profile.",
+        "saving": "Saving…",
+        "phoneInvalid": "Enter a valid phone number (10–15 characters).",
+        "roleReadOnly": "Account role is managed by an administrator and cannot be changed here."
     }
 }

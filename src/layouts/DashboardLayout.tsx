@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { LogOut, User, Building2 } from 'lucide-react';
 import { useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppStore';
@@ -7,12 +7,15 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 import { useLogout } from '@/hooks/useLogout';
 import { UserAvatar } from '@/components/UserAvatar';
+import { profilePathForRole } from '@/lib/profilePaths';
 
 export function DashboardLayout() {
     const { t } = useTranslation();
     const user = useAppSelector((state) => state.auth.user);
     const [menuOpen, setMenuOpen] = useState(false);
     const handleLogout = useLogout();
+    const navigate = useNavigate();
+    const profilePath = user ? profilePathForRole(user.role) : '/';
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col transition-colors duration-200">
@@ -58,8 +61,12 @@ export function DashboardLayout() {
                                 </div>
                                 <div className="p-1">
                                     <button
+                                        type="button"
                                         className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-                                        onClick={() => setMenuOpen(false)}
+                                        onClick={() => {
+                                            setMenuOpen(false);
+                                            navigate(profilePath);
+                                        }}
                                     >
                                         <User className="h-4 w-4" /> {t('common.profile')}
                                     </button>
