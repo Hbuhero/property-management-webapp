@@ -101,6 +101,18 @@ const router = createBrowserRouter([
                                 }),
                             },
                             {
+                                path: 'property-types',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/admin/AdminPropertyTypes')).default,
+                                }),
+                            },
+                            {
+                                path: 'locations',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/admin/AdminLocations')).default,
+                                }),
+                            },
+                            {
                                 path: 'profile/edit',
                                 lazy: async () => ({
                                     Component: (await import('./pages/profile/EditProfilePage')).default,

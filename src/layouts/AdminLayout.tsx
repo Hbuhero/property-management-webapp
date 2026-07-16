@@ -7,6 +7,8 @@ import {
     Building2,
     ShoppingBag,
     FileBarChart,
+    Tag,
+    MapPin,
 } from 'lucide-react';
 import { SidebarUserBlock } from '@/components/dashboard/SidebarUserBlock';
 import { DashboardPublicBar } from '@/components/dashboard/DashboardPublicBar';
@@ -23,6 +25,8 @@ const navItems: NavItem[] = [
     { name: 'System Health', path: '/admin', icon: Activity, match: 'exact' },
     { name: 'Users', path: '/admin/users', icon: Users, match: 'prefix' },
     { name: 'Properties', path: '/admin/properties', icon: Building2, match: 'prefix' },
+    { name: 'Property types', path: '/admin/property-types', icon: Tag, match: 'exact' },
+    { name: 'Locations', path: '/admin/locations', icon: MapPin, match: 'exact' },
     { name: 'Reports', path: '/admin/reports', icon: FileBarChart, match: 'exact' },
     { name: 'Security', path: '/admin/security', icon: ShieldAlert, match: 'exact' },
     { name: 'Marketplace', path: '/marketplace', icon: ShoppingBag, match: 'exact', external: true },
