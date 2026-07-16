@@ -10,6 +10,7 @@ import {
 import { uploadListingImage } from '@/api/fileUploadApi';
 import { resolvePropertyImageUrl } from '@/lib/propertyMediaUrl';
 import { SUGGESTED_BUILDING_AMENITIES } from '@/lib/buildingAmenitySuggestions';
+import { FormSelect } from '@/components/ui/form-select';
 import { showError, showSuccess } from '@/lib/toast';
 import { usePatchProperty, useProperty } from '@/queries/property.queries';
 import type { PropertyDetail, PropertyPatchInput } from '@/schemas/property.schema';
@@ -271,64 +272,51 @@ function PropertyEditForm({ id, base, detail }: { id: number; base: string; deta
             <div className="grid gap-4 sm:grid-cols-2">
                 <label className={labelClass}>
                     Region
-                    <select
-                        className={inputClass}
-                        value={regionId === '' ? '' : String(regionId)}
-                        disabled={regionsQuery.isPending}
-                        onChange={(e) => {
-                            const v = e.target.value === '' ? '' : Number(e.target.value);
-                            setRegionId(v);
+                    <FormSelect
+                        value={regionId === '' ? undefined : String(regionId)}
+                        onValueChange={(value) => {
+                            setRegionId(Number(value));
                             setDistrictId('');
                         }}
-                    >
-                        <option value="">Select region</option>
-                        {(regionsQuery.data ?? []).map((r) => (
-                            <option key={r.id} value={r.id}>
-                                {r.name}
-                            </option>
-                        ))}
-                    </select>
+                        disabled={regionsQuery.isPending}
+                        placeholder="Select region"
+                        triggerClassName={inputClass}
+                        options={(regionsQuery.data ?? []).map((r) => ({
+                            value: String(r.id),
+                            label: r.name,
+                        }))}
+                    />
                 </label>
 
                 <label className={labelClass}>
                     District
-                    <select
-                        className={inputClass}
-                        value={districtId === '' ? '' : String(districtId)}
+                    <FormSelect
+                        value={districtId === '' ? undefined : String(districtId)}
+                        onValueChange={(value) => setDistrictId(Number(value))}
                         disabled={typeof regionId !== 'number' || districtsQuery.isPending}
-                        onChange={(e) => {
-                            const v = e.target.value === '' ? '' : Number(e.target.value);
-                            setDistrictId(v);
-                        }}
-                    >
-                        <option value="">Select district</option>
-                        {(districtsQuery.data ?? []).map((d) => (
-                            <option key={d.id} value={d.id}>
-                                {d.name}
-                            </option>
-                        ))}
-                    </select>
+                        placeholder="Select district"
+                        triggerClassName={inputClass}
+                        options={(districtsQuery.data ?? []).map((d) => ({
+                            value: String(d.id),
+                            label: d.name,
+                        }))}
+                    />
                 </label>
             </div>
 
             <label className={labelClass}>
                 Property type
-                <select
-                    className={inputClass}
-                    value={propertyTypeId === '' ? '' : String(propertyTypeId)}
+                <FormSelect
+                    value={propertyTypeId === '' ? undefined : String(propertyTypeId)}
+                    onValueChange={(value) => setPropertyTypeId(Number(value))}
                     disabled={typesQuery.isPending}
-                    onChange={(e) => {
-                        const v = e.target.value === '' ? '' : Number(e.target.value);
-                        setPropertyTypeId(v);
-                    }}
-                >
-                    <option value="">Select type</option>
-                    {(typesQuery.data ?? []).map((t) => (
-                        <option key={t.id} value={t.id}>
-                            {t.name}
-                        </option>
-                    ))}
-                </select>
+                    placeholder="Select type"
+                    triggerClassName={inputClass}
+                    options={(typesQuery.data ?? []).map((t) => ({
+                        value: String(t.id),
+                        label: t.name,
+                    }))}
+                />
             </label>
 
             <div className={labelClass}>

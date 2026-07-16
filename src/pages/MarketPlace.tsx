@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { FormSelect } from '@/components/ui/form-select';
 import SiteFooter from '@/components/landing/SiteFooter';
 import dodomaImg from '@/assets/ditte-yven-vzvpjB5Arlk-unsplash.jpg';
 import darImg from '@/assets/moses-londo-1bubgYf5zeY-unsplash.jpg';
@@ -171,27 +172,28 @@ const Marketplace = () => {
                         </div>
                         <div className="flex-1 flex items-center px-4 gap-2 border-r border-slate-100 dark:border-slate-700">
                             <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                            <select
-                                value={regionFilter}
-                                onChange={(e) => setRegionFilter(e.target.value)}
-                                className="w-full py-3 focus:outline-none text-slate-700 dark:text-slate-200 bg-transparent text-sm"
-                            >
-                                <option value="">All regions</option>
-                                <option value="dar">Dar es Salaam</option>
-                                <option value="arusha">Arusha</option>
-                                <option value="zanzibar">Zanzibar</option>
-                                <option value="dodoma">Dodoma</option>
-                            </select>
+                            <FormSelect
+                                value={regionFilter || '__all__'}
+                                onValueChange={(value) => setRegionFilter(value === '__all__' ? '' : value)}
+                                triggerClassName="border-0 bg-transparent shadow-none focus:ring-0 h-auto py-3"
+                                options={[
+                                    { value: '__all__', label: 'All regions' },
+                                    { value: 'dar', label: 'Dar es Salaam' },
+                                    { value: 'arusha', label: 'Arusha' },
+                                    { value: 'zanzibar', label: 'Zanzibar' },
+                                    { value: 'dodoma', label: 'Dodoma' },
+                                ]}
+                            />
                         </div>
                         <div className="flex-1 flex items-center px-4 gap-2">
                             <Filter className="h-4 w-4 text-slate-400 shrink-0" />
-                            <select
+                            <FormSelect
+                                value="all-types"
+                                onValueChange={() => undefined}
                                 disabled
-                                title="More filters coming soon"
-                                className="w-full py-3 focus:outline-none text-slate-400 dark:text-slate-500 bg-transparent text-sm cursor-not-allowed"
-                            >
-                                <option>All types</option>
-                            </select>
+                                triggerClassName="border-0 bg-transparent shadow-none focus:ring-0 h-auto py-3 text-slate-400 dark:text-slate-500"
+                                options={[{ value: 'all-types', label: 'All types' }]}
+                            />
                         </div>
                         <button
                             type="button"

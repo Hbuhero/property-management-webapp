@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { useRegisterMutation } from '@/queries/auth.queries';
 import { uploadPublicImage } from '@/api/fileUploadApi';
 import { ProfileImageField } from '@/components/auth/ProfileImageField';
+import { FormSelect } from '@/components/ui/form-select';
 import { showError } from '@/lib/toast';
 import { homePathForRole } from '@/lib/authRole';
 import { registerSchema, type RegisterFormData, type SelfRegistrationRole } from '@/schemas/auth.schema';
@@ -207,16 +208,17 @@ export default function RegisterPage() {
                         </label>
                         <div className="relative">
                             <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none z-10" />
-                            <select
+                            <FormSelect
                                 id="role"
                                 value={form.role}
-                                onChange={(e) => setRole(e.target.value as SelfRegistrationRole)}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                            >
-                                <option value="TENANT">{t('auth.roleTenant')}</option>
-                                <option value="LAND_LORD">{t('auth.roleLandlord')}</option>
-                                <option value="USER">{t('auth.roleUser')}</option>
-                            </select>
+                                onValueChange={(value) => setRole(value as SelfRegistrationRole)}
+                                triggerClassName="pl-10 rounded-xl border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
+                                options={[
+                                    { value: 'TENANT', label: t('auth.roleTenant') },
+                                    { value: 'LAND_LORD', label: t('auth.roleLandlord') },
+                                    { value: 'USER', label: t('auth.roleUser') },
+                                ]}
+                            />
                         </div>
                         {errors.role && <p className="text-xs text-red-500">{errors.role}</p>}
                     </div>

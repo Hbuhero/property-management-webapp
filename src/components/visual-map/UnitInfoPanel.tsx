@@ -317,10 +317,10 @@ export function UnitInfoPanel({ unit, floorLabel, onEnquire, isSubmitting = fals
                                                         setInterval(value as BookingIntervalValue);
                                                     }}
                                                 >
-                                                    <SelectTrigger className="border-slate-200 bg-white text-slate-900 focus:ring-emerald-500">
+                                                    <SelectTrigger>
                                                         <SelectValue placeholder="Select duration" />
                                                     </SelectTrigger>
-                                                    <SelectContent className="border-slate-200 bg-white text-slate-900">
+                                                    <SelectContent>
                                                         {BOOKING_INTERVALS.map((option) => (
                                                             <SelectItem key={option.value} value={option.value}>
                                                                 {option.label}

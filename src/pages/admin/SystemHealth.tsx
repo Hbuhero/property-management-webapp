@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Building2, Database, Gauge, ShieldAlert, Users } from 'lucide-react';
+import { Activity, Building2, Database, Gauge, ShieldAlert, Users, FileBarChart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { fetchAdminUserStats } from '@/api/adminUsersApi';
 import { fetchAdminPropertiesPage } from '@/api/adminPropertiesApi';
@@ -173,6 +173,13 @@ const SystemHealth = () => {
                         All properties
                     </Link>
                     <Link
+                        to="/admin/reports"
+                        className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition-colors"
+                    >
+                        <FileBarChart className="h-5 w-5 text-emerald-600 shrink-0" aria-hidden />
+                        Reports &amp; exports
+                    </Link>
+                    <Link
                         to="/admin/security"
                         className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition-colors"
                     >
@@ -190,8 +197,7 @@ const SystemHealth = () => {
                     </Link>
                 </div>
                 <p className="px-6 pb-6 text-xs text-slate-400 dark:text-slate-500">
-                    Centralized security event streaming is not wired yet — the Security page remains a layout
-                    preview until backend audit APIs land.
+                    Generate PDF reports on users, invoices, and system activity from the Reports page.
                 </p>
             </motion.div>
         </motion.div>

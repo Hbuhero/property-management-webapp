@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import type { UnitMapUnitDto, UnitOverlayPutBody } from '@/lib/contracts/preVisualMapContracts';
+import { FormSelect } from '@/components/ui/form-select';
 import { clientRectToPercentBox, OVERLAY_DRAG_MIN_PCT } from '@/components/visual-map/overlayPercentBox';
 
 export type OverlayEditorProps = {
@@ -201,22 +202,17 @@ export function OverlayEditor({
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                     Unit for overlay
-                    <select
-                        className="ml-2 mt-1 block w-full min-w-[12rem] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 sm:mt-0 sm:inline-block sm:w-auto"
-                        value={selectedUnitId ?? ''}
-                        onChange={(ev) => {
-                            const v = ev.target.value;
-                            onSelectUnit(v === '' ? null : Number(v));
-                        }}
+                    <FormSelect
+                        value={selectedUnitId != null ? String(selectedUnitId) : undefined}
+                        onValueChange={(value) => onSelectUnit(Number(value))}
                         disabled={disabled || units.length === 0}
-                    >
-                        <option value="">Select a unit…</option>
-                        {units.map((u) => (
-                            <option key={u.unitId} value={u.unitId}>
-                                Unit {u.unitNumber} ({u.status})
-                            </option>
-                        ))}
-                    </select>
+                        placeholder="Select a unit…"
+                        triggerClassName="ml-2 mt-1 block w-full min-w-[12rem] sm:mt-0 sm:inline-flex sm:w-auto"
+                        options={units.map((u) => ({
+                            value: String(u.unitId),
+                            label: `Unit ${u.unitNumber} (${u.status})`,
+                        }))}
+                    />
                 </label>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                     {canDraw

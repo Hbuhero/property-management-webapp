@@ -11,6 +11,7 @@ import {
     useUploadFloorPlanOwner,
 } from '@/hooks/useFloorMap';
 import { resolveFloorThumbnailUrl, resolvePropertyImageUrl } from '@/lib/propertyMediaUrl';
+import { FormSelect } from '@/components/ui/form-select';
 import { showError, showSuccess } from '@/lib/toast';
 import type { UnitMapUnitDto, UnitOverlayPutBody } from '@/lib/contracts/preVisualMapContracts';
 import { useLeasePreset, useSaveLeasePreset } from '@/queries/leasePreset.queries';
@@ -311,36 +312,38 @@ function LeasePresetEditor({
                                                 />
                                             </td>
                                             <td className="px-3 py-2 align-top">
-                                                <select
+                                                <FormSelect
                                                     value={row.leaseType}
-                                                    onChange={(e) =>
+                                                    onValueChange={(value) =>
                                                         updateItem(row.id, {
-                                                            leaseType: e.target.value as LeasePresetItemDraft['leaseType'],
+                                                            leaseType: value as LeasePresetItemDraft['leaseType'],
                                                             timeFrame:
-                                                                e.target.value === 'ONE_TIME' ? 'NONE' : row.timeFrame,
+                                                                value === 'ONE_TIME' ? 'NONE' : row.timeFrame,
                                                         })
                                                     }
-                                                    className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                                >
-                                                    <option value="RECURRING">Recurring</option>
-                                                    <option value="ONE_TIME">One-time</option>
-                                                </select>
+                                                    triggerClassName="h-9 rounded-lg border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                    options={[
+                                                        { value: 'RECURRING', label: 'Recurring' },
+                                                        { value: 'ONE_TIME', label: 'One-time' },
+                                                    ]}
+                                                />
                                             </td>
                                             <td className="px-3 py-2 align-top">
-                                                <select
+                                                <FormSelect
                                                     value={row.timeFrame}
-                                                    onChange={(e) =>
+                                                    onValueChange={(value) =>
                                                         updateItem(row.id, {
-                                                            timeFrame: e.target.value as LeasePresetItemDraft['timeFrame'],
+                                                            timeFrame: value as LeasePresetItemDraft['timeFrame'],
                                                         })
                                                     }
-                                                    className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                                >
-                                                    <option value="NONE">None</option>
-                                                    <option value="DAY">Day</option>
-                                                    <option value="MONTH">Month</option>
-                                                    <option value="YEAR">Year</option>
-                                                </select>
+                                                    triggerClassName="h-9 rounded-lg border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                                    options={[
+                                                        { value: 'NONE', label: 'None' },
+                                                        { value: 'DAY', label: 'Day' },
+                                                        { value: 'MONTH', label: 'Month' },
+                                                        { value: 'YEAR', label: 'Year' },
+                                                    ]}
+                                                />
                                             </td>
                                             <td className="px-3 py-2 align-top">
                                                 <input

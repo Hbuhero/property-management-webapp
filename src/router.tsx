@@ -113,6 +113,12 @@ const router = createBrowserRouter([
                                 }),
                             },
                             {
+                                path: 'reports',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/admin/AdminReports')).default,
+                                }),
+                            },
+                            {
                                 path: 'security',
                                 lazy: async () => ({
                                     Component: (await import('./pages/admin/SecurityLogs')).default,

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useAppSelector } from '@/hooks/useAppStore';
 import { showError, showSuccess } from '@/lib/toast';
 import { useAdminUser, useUpdateAdminUser } from '@/queries/adminUsers.queries';
+import { FormSelect } from '@/components/ui/form-select';
 import type { AdminUserRow } from '@/schemas/adminUser.schema';
 
 const BACKEND_ROLES = ['SUPER_ADMIN', 'ADMIN', 'USER', 'TENANT', 'LAND_LORD'] as const;
@@ -75,18 +76,16 @@ function AdminUserEditForm({
             </label>
             <label className={labelClass}>
                 Primary role (backend)
-                <select
-                    className={inputClass}
+                <FormSelect
                     value={role}
-                    onChange={(e) => setRole(e.target.value)}
+                    onValueChange={setRole}
                     disabled={!canEditRole}
-                >
-                    {BACKEND_ROLES.map((r) => (
-                        <option key={r} value={r}>
-                            {r.replace(/_/g, ' ')}
-                        </option>
-                    ))}
-                </select>
+                    triggerClassName={inputClass}
+                    options={BACKEND_ROLES.map((r) => ({
+                        value: r,
+                        label: r.replace(/_/g, ' '),
+                    }))}
+                />
                 {!canEditRole ? (
                     <span className="mt-1 block text-xs text-slate-400">
                         Only admins can change roles; you cannot change your own role here.
