@@ -9,6 +9,7 @@ import {
     ShoppingBag,
 } from 'lucide-react';
 import { SidebarUserBlock } from '@/components/dashboard/SidebarUserBlock';
+import { DashboardPublicBar } from '@/components/dashboard/DashboardPublicBar';
 
 type NavItem = {
     name: string;
@@ -90,6 +91,7 @@ const AdminLayout = () => {
             </aside>
 
             <main className="flex-1 min-h-0 p-6 lg:p-8 overflow-y-auto">
+                <DashboardPublicBar />
                 <Outlet />
             </main>
         </div>

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Globe, ShoppingBag } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { ProfileTopLink } from '@/components/dashboard/ProfileTopLink';
 
 export function DashboardPublicBar() {
     return (
@@ -19,8 +20,9 @@ export function DashboardPublicBar() {
                 <Globe className="h-4 w-4 shrink-0" aria-hidden />
                 Website home
             </Link>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2 shrink-0">
                 <NotificationBell />
+                <ProfileTopLink />
             </div>
         </div>
     );

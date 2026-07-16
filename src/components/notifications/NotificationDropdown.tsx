@@ -1,6 +1,5 @@
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { NotificationItem } from '@/components/notifications/NotificationItem';
 import type { Notification } from '@/schemas/notification.schema';
 
@@ -22,7 +21,7 @@ export function NotificationDropdown({
     onSelect,
 }: NotificationDropdownProps) {
     return (
-        <div className="flex flex-col">
+        <div className="flex max-h-[min(20rem,calc(100vh-8rem))] flex-col overflow-hidden">
             <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-1 pb-3 dark:border-slate-700">
                 <div>
                     <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Notifications</p>
@@ -55,7 +54,7 @@ export function NotificationDropdown({
                     No notifications yet.
                 </div>
             ) : (
-                <ScrollArea className="max-h-80 pr-1">
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
                     <div className="space-y-1 py-2">
                         {notifications.map((notification) => (
                             <NotificationItem
@@ -65,7 +64,7 @@ export function NotificationDropdown({
                             />
                         ))}
                     </div>
-                </ScrollArea>
+                </div>
             )}
         </div>
     );

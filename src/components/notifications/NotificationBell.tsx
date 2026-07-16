@@ -74,7 +74,7 @@ export function NotificationBell({ triggerClassName, align = 'end' }: Notificati
                     ) : null}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent align={align} className="w-80 rounded-2xl p-3">
+            <PopoverContent align={align} className="w-80 max-h-[min(24rem,calc(100vh-6rem))] overflow-hidden rounded-2xl p-3">
                 <NotificationDropdown
                     notifications={notifications}
                     unreadCount={unreadCount}
