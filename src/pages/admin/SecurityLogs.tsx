@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom';
 import { ShieldAlert, FileBarChart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
-import { useAdminReportSummary } from '@/queries/adminReport.queries';
+import { InvoiceListPagination } from '@/components/invoices/InvoiceListPagination';
+import { totalPagesFromMeta } from '@/components/admin/AdminActivityFeed';
+import { useAdminActivityPage } from '@/queries/adminReport.queries';
 
 const fadeUp = {
     initial: { opacity: 0, y: 16 },
@@ -22,7 +24,16 @@ const SecurityLogs = () => {
     const range = useMemo(() => defaultRange(), []);
     const [from] = useState(range.from);
     const [to] = useState(range.to);
-    const { data, isLoading, isError } = useAdminReportSummary({ from, to, activityLimit: 30 });
+    const [page, setPage] = useState(1);
+
+    const { data, isLoading, isError, isFetching } = useAdminActivityPage({
+        from,
+        to,
+        page: page - 1,
+        size: 10,
+    });
+
+    const totalPages = totalPagesFromMeta(data?.page.pageCount);
 
     const severityFor = (category: string): 'High' | 'Medium' | 'Low' => {
         if (category === 'Payment' || category === 'User') return 'Medium';
@@ -63,7 +74,7 @@ const SecurityLogs = () => {
                     ? Array.from({ length: 3 }).map((_, i) => (
                           <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-700" />
                       ))
-                    : data?.recentActivity.map((log, i) => {
+                    : data?.records.map((log, i) => {
                           const severity = severityFor(log.category);
                           return (
                               <motion.div
@@ -101,10 +112,17 @@ const SecurityLogs = () => {
                               </motion.div>
                           );
                       })}
-                {!isLoading && data?.recentActivity.length === 0 ? (
+                {!isLoading && data?.records.length === 0 ? (
                     <p className="text-sm text-slate-500">No recent activity in the last 14 days.</p>
                 ) : null}
             </div>
+
+            <InvoiceListPagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                disabled={isFetching}
+            />
         </motion.div>
     );
 };

@@ -1,9 +1,12 @@
 import { apiBlob, apiJson, type ApiBlobResult } from '@/lib/apiClient';
 import { API_V1_PREFIX } from '@/lib/contracts/preVisualMapContracts';
 import {
+    AdminActivityPageSchema,
     AdminSystemSummarySchema,
+    type AdminActivityFilters,
     type AdminReportFilters,
     type AdminSystemSummary,
+    type AdminActivityPage,
 } from '@/schemas/adminReport.schema';
 
 const ADMIN_REPORTS = `${API_V1_PREFIX}/admin/reports`;
@@ -30,6 +33,21 @@ export async function fetchAdminReportSummary(
         { method: 'GET' },
     );
     return AdminSystemSummarySchema.parse(raw);
+}
+
+export async function fetchAdminActivityPage(
+    filters?: AdminActivityFilters,
+): Promise<AdminActivityPage> {
+    const raw = await apiJson<unknown>(
+        `${ADMIN_REPORTS}/activity${toQuery({
+            from: filters?.from,
+            to: filters?.to,
+            page: filters?.page,
+            size: filters?.size,
+        })}`,
+        { method: 'GET' },
+    );
+    return AdminActivityPageSchema.parse(raw);
 }
 
 export async function downloadAdminSystemOverviewPdf(

@@ -4,21 +4,31 @@ import {
     downloadAdminInvoicesPdf,
     downloadAdminSystemOverviewPdf,
     downloadAdminUsersPdf,
+    fetchAdminActivityPage,
     fetchAdminReportSummary,
 } from '@/api/adminReportApi';
 import { triggerBlobDownload } from '@/lib/apiClient';
 import { showError, showSuccess } from '@/lib/toast';
-import type { AdminReportFilters } from '@/schemas/adminReport.schema';
+import type { AdminActivityFilters, AdminReportFilters } from '@/schemas/adminReport.schema';
 
 export const adminReportKeys = {
     all: ['admin-reports'] as const,
     summary: (filters?: AdminReportFilters) => [...adminReportKeys.all, 'summary', filters ?? {}] as const,
+    activity: (filters?: AdminActivityFilters) => [...adminReportKeys.all, 'activity', filters ?? {}] as const,
 };
 
 export function useAdminReportSummary(filters?: AdminReportFilters) {
     return useQuery({
         queryKey: adminReportKeys.summary(filters),
         queryFn: () => fetchAdminReportSummary(filters),
+        staleTime: 30_000,
+    });
+}
+
+export function useAdminActivityPage(filters?: AdminActivityFilters) {
+    return useQuery({
+        queryKey: adminReportKeys.activity(filters),
+        queryFn: () => fetchAdminActivityPage(filters),
         staleTime: 30_000,
     });
 }

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PaginationMetaSchema } from '@/schemas/property.schema';
 
 export const AdminActivityEventSchema = z.object({
     occurredAt: z.string(),
@@ -40,4 +41,18 @@ export type AdminReportFilters = {
     to?: string;
     status?: string;
     activityLimit?: number;
+};
+
+export const AdminActivityPageSchema = z.object({
+    page: PaginationMetaSchema,
+    records: z.array(AdminActivityEventSchema),
+});
+
+export type AdminActivityPage = z.infer<typeof AdminActivityPageSchema>;
+
+export type AdminActivityFilters = {
+    from?: string;
+    to?: string;
+    page?: number;
+    size?: number;
 };
