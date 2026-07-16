@@ -101,6 +101,18 @@ const router = createBrowserRouter([
                                 }),
                             },
                             {
+                                path: 'profile/edit',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/profile/EditProfilePage')).default,
+                                }),
+                            },
+                            {
+                                path: 'profile',
+                                lazy: async () => ({
+                                    Component: (await import('./pages/profile/ProfilePage')).default,
+                                }),
+                            },
+                            {
                                 path: 'users/:userId',
                                 lazy: async () => ({
                                     Component: (await import('./pages/admin/AdminUserDetail')).default,
@@ -122,18 +134,6 @@ const router = createBrowserRouter([
                                 path: 'security',
                                 lazy: async () => ({
                                     Component: (await import('./pages/admin/SecurityLogs')).default,
-                                }),
-                            },
-                            {
-                                path: 'profile',
-                                lazy: async () => ({
-                                    Component: (await import('./pages/profile/ProfilePage')).default,
-                                }),
-                            },
-                            {
-                                path: 'profile/edit',
-                                lazy: async () => ({
-                                    Component: (await import('./pages/profile/EditProfilePage')).default,
                                 }),
                             },
                         ],
