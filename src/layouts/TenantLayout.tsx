@@ -17,8 +17,8 @@ const TenantLayout = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex transition-colors duration-200">
-            <aside className="w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col shrink-0">
+        <div className="h-screen bg-slate-50 dark:bg-slate-950 flex overflow-hidden transition-colors duration-200">
+            <aside className="w-60 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col shrink-0">
                 <div className="p-6 flex flex-col flex-1 min-h-0">
                     <nav className="space-y-1 flex-1">
                         {navItems.map((item) => {
@@ -56,7 +56,7 @@ const TenantLayout = () => {
                 </div>
             </aside>
 
-            <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+            <main className="flex-1 min-h-0 p-6 lg:p-8 overflow-y-auto">
                 <DashboardPublicBar />
                 <Outlet />
             </main>

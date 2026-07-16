@@ -37,8 +37,8 @@ const AdminLayout = () => {
     const location = useLocation();
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex transition-colors duration-200">
-            <aside className="w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col shrink-0">
+        <div className="h-screen bg-slate-50 dark:bg-slate-950 flex overflow-hidden transition-colors duration-200">
+            <aside className="w-60 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col shrink-0">
                 <div className="p-6 flex flex-col flex-1 min-h-0">
                     <div className="flex items-center gap-3 mb-8">
                         <div className="w-10 h-10 rounded-xl bg-emerald-500/20 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
@@ -89,7 +89,7 @@ const AdminLayout = () => {
                 </div>
             </aside>
 
-            <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+            <main className="flex-1 min-h-0 p-6 lg:p-8 overflow-y-auto">
                 <Outlet />
             </main>
         </div>
